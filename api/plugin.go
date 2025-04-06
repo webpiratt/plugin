@@ -467,7 +467,7 @@ func (s *Server) GetPluginPolicyTransactionHistory(c echo.Context) error {
 func (s *Server) initializePlugin(pluginType string) (plugin.Plugin, error) {
 	switch pluginType {
 	case "payroll":
-		return payroll.NewPayrollPlugin(s.db, s.logger, s.rpcClient), nil
+		return payroll.NewPayrollPlugin(s.db, s.logger, s.pluginConfig)
 	case "dca":
 		cfg, err := config.ReadConfig("config-plugin")
 		if err != nil {

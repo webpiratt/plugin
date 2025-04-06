@@ -32,6 +32,10 @@ type Config struct {
 		} `mapstructure:"user_auth" json:"auth,omitempty"`
 	} `mapstructure:"server" json:"server"`
 
+	Plugin struct {
+		PluginConfig map[string]interface{} `mapstructure:"plugin_config" json:"plugin_config,omitempty"`
+	} `mapstructure:"plugin" json:"plugin,omitempty"`
+
 	Redis struct {
 		Host     string `mapstructure:"host" json:"host,omitempty"`
 		Port     string `mapstructure:"port" json:"port,omitempty"`
