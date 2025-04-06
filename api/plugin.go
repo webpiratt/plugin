@@ -27,7 +27,6 @@ import (
 
 	gcommon "github.com/ethereum/go-ethereum/common"
 	gtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
 )
@@ -473,13 +472,10 @@ func (s *Server) initializePlugin(pluginType string) (plugin.Plugin, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read plugin config: %w", err)
 		}
-		rpcClient, err := ethclient.Dial(cfg.Server.Plugin.Eth.Rpc)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize rpc client: %w", err)
-		}
+
 		uniswapV2RouterAddress := gcommon.HexToAddress(cfg.Server.Plugin.Eth.Uniswap.V2Router)
 		uniswapCfg := uniswap.NewConfig(
-			rpcClient,
+			s.rpcClient,
 			&uniswapV2RouterAddress,
 			2000000, // TODO: config
 			50000,   // TODO: config
