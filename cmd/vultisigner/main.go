@@ -74,7 +74,7 @@ func main() {
 		cfg.Server.JWTSecret,
 		cfg.Server.Plugin.Type,
 		cfg.Server.Plugin.Eth.Rpc,
-		cfg.Plugin.PluginConfig,
+		cfg.Plugin.PluginConfigs,
 		logger,
 	)
 	if err := server.StartServer(); err != nil {

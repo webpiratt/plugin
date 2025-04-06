@@ -66,12 +66,12 @@ func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client,
 	if cfg.Server.Mode == "plugin" {
 		switch cfg.Server.Plugin.Type {
 		case "payroll":
-			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, cfg.Plugin.PluginConfig)
+			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, cfg.Plugin.PluginConfigs["payroll"])
 			if err != nil {
 				return nil, fmt.Errorf("fail to initialize payroll plugin: %w", err)
 			}
 		case "dca":
-			plugin, err = dca.NewDCAPlugin(db, logger, cfg.Plugin.PluginConfig)
+			plugin, err = dca.NewDCAPlugin(db, logger, cfg.Plugin.PluginConfigs["dca"])
 			if err != nil {
 				return nil, fmt.Errorf("fail to initialize DCA plugin: %w", err)
 			}

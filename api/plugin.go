@@ -464,9 +464,9 @@ func (s *Server) GetPluginPolicyTransactionHistory(c echo.Context) error {
 func (s *Server) initializePlugin(pluginType string) (plugin.Plugin, error) {
 	switch pluginType {
 	case "payroll":
-		return payroll.NewPayrollPlugin(s.db, s.logger, s.pluginConfig)
+		return payroll.NewPayrollPlugin(s.db, s.logger, s.pluginConfigs["payroll"])
 	case "dca":
-		return dca.NewDCAPlugin(s.db, s.logger, s.pluginConfig)
+		return dca.NewDCAPlugin(s.db, s.logger, s.pluginConfigs["dca"])
 	default:
 		return nil, fmt.Errorf("unknown plugin type: %s", pluginType)
 	}

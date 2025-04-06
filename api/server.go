@@ -55,7 +55,7 @@ type Server struct {
 	syncer        syncer.PolicySyncer
 	plugin        plugin.Plugin
 	logger        *logrus.Logger
-	pluginConfig  map[string]interface{}
+	pluginConfigs map[string]map[string]interface{}
 	vaultFilePath string
 	mode          string
 }
@@ -75,7 +75,7 @@ func NewServer(
 	jwtSecret string,
 	pluginType string,
 	rpcURL string,
-	pluginConfig map[string]interface{},
+	pluginConfigs map[string]map[string]interface{},
 	logger *logrus.Logger,
 ) *Server {
 	logger.Infof("Server mode: %s, plugin type: %s", mode, pluginType)
@@ -87,12 +87,12 @@ func NewServer(
 	if mode == "plugin" {
 		switch pluginType {
 		case "payroll":
-			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, pluginConfig)
+			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, pluginConfigs["payroll"])
 			if err != nil {
 				logger.Fatal("failed to initialize payroll plugin", err)
 			}
 		case "dca":
-			plugin, err = dca.NewDCAPlugin(db, logger, pluginConfig)
+			plugin, err = dca.NewDCAPlugin(db, logger, pluginConfigs["dca"])
 			if err != nil {
 				logger.Fatal("fail to initialize DCA plugin: ", err)
 			}
@@ -140,7 +140,7 @@ func NewServer(
 		syncer:        syncerService,
 		policyService: policyService,
 		authService:   authService,
-		pluginConfig:  pluginConfig,
+		pluginConfigs: pluginConfigs,
 	}
 }
 
