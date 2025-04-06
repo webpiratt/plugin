@@ -50,9 +50,7 @@
                         { name = "vs-plugins-plugin"; }
                       ];
                       listen_addresses = "127.0.0.1";
-                      settings = {
-                        unix_socket_directories = "/tmp";
-                      };
+                      port = 5433;
                     };
                   };
 
