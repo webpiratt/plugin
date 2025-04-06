@@ -10,9 +10,10 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/vultisig/vultisigner/common"
-	"github.com/vultisig/vultisigner/config"
 	"github.com/vultisig/vultisigner/internal/sigutil"
 	"github.com/vultisig/vultisigner/internal/types"
 	"github.com/vultisig/vultisigner/pkg/uniswap"
@@ -51,16 +52,33 @@ type DCAPlugin struct {
 	logger        *logrus.Logger
 }
 
-func NewDCAPlugin(uniswapCfg *uniswap.Config, db storage.DatabaseStorage, logger *logrus.Logger) (*DCAPlugin, error) {
-	pluginConfig, err := config.ReadConfig("config-plugin")
-	if err != nil {
-		return nil, fmt.Errorf("fail to read plugin config: %w", err)
+type DCAPluginConfig struct {
+	RpcURL  string `mapstructure:"rpc_url" json:"rpc_url"`
+	Uniswap struct {
+		V2Router string `mapstructure:"v2_router" json:"v2_router"`
+		Deadline int64  `mapstructure:"deadline" json:"deadline"`
+	} `mapstructure:"uniswap" json:"uniswap"`
+}
+
+func NewDCAPlugin(db storage.DatabaseStorage, logger *logrus.Logger, rawConfig map[string]interface{}) (*DCAPlugin, error) {
+	var cfg DCAPluginConfig
+	if err := mapstructure.Decode(rawConfig, &cfg); err != nil {
+		return nil, err
 	}
 
-	rpcClient, err := ethclient.Dial(pluginConfig.Server.Plugin.Eth.Rpc)
+	rpcClient, err := ethclient.Dial(cfg.RpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("fail to connect to RPC client: %w", err)
 	}
+
+	routerAddress := gcommon.HexToAddress(cfg.Uniswap.V2Router)
+	uniswapCfg := uniswap.NewConfig(
+		rpcClient,
+		&routerAddress,
+		2000000, // TODO: config
+		50000,   // TODO: config
+		time.Duration(cfg.Uniswap.Deadline)*time.Minute,
+	)
 
 	uniswapClient, err := uniswap.NewClient(uniswapCfg)
 	if err != nil {
