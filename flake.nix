@@ -31,7 +31,11 @@
             default = devenv.lib.mkShell {
               inherit inputs pkgs;
               modules = [
-                {
+                ({ pkgs, config, ... }: {
+                  dotenv = {
+                    enable = true;
+                  };
+
                   # https://devenv.sh/reference/options/
                   services = {
                     redis = {
@@ -50,7 +54,7 @@
                         { name = "vs-plugins-plugin"; }
                       ];
                       listen_addresses = "127.0.0.1";
-                      port = 5433;
+                      port = pkgs.lib.strings.toInt config.env.PG_PORT;
                     };
                   };
 
@@ -66,7 +70,7 @@
                   enterShell = ''
                     echo "vultisig-plugins shell"
                   '';
-                }
+                })
               ];
             };
           });
