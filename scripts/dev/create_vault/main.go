@@ -61,6 +61,7 @@ func main() {
 		EncryptionPassword: "your-secure-password",
 		Email:              "example@example.com",
 		StartSession:       false,
+		LibType:            types.DKLS,
 	}
 
 	serverHost := fmt.Sprintf("http://%s:%d", serverConfig.Server.Host, serverConfig.Server.Port)
