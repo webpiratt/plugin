@@ -34,6 +34,7 @@
                 ({ pkgs, config, ... }: {
                   dotenv = {
                     enable = true;
+                    filename = ".env.flake";
                   };
 
                   # https://devenv.sh/reference/options/
@@ -68,6 +69,7 @@
                   ];
 
                   enterShell = ''
+                    source .env
                     echo "vultisig-plugins shell"
                   '';
                 })
