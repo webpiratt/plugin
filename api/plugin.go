@@ -20,14 +20,11 @@ import (
 	"github.com/vultisig/vultisigner/internal/sigutil"
 	"github.com/vultisig/vultisigner/internal/tasks"
 	"github.com/vultisig/vultisigner/internal/types"
-	"github.com/vultisig/vultisigner/pkg/uniswap"
 	"github.com/vultisig/vultisigner/plugin"
 	"github.com/vultisig/vultisigner/plugin/dca"
 	"github.com/vultisig/vultisigner/plugin/payroll"
 
-	gcommon "github.com/ethereum/go-ethereum/common"
 	gtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
 )
@@ -467,25 +464,9 @@ func (s *Server) GetPluginPolicyTransactionHistory(c echo.Context) error {
 func (s *Server) initializePlugin(pluginType string) (plugin.Plugin, error) {
 	switch pluginType {
 	case "payroll":
-		return payroll.NewPayrollPlugin(s.db, s.logger, s.rpcClient), nil
+		return payroll.NewPayrollPlugin(s.db, s.logger, s.pluginConfigs["payroll"])
 	case "dca":
-		cfg, err := config.ReadConfig("config-plugin")
-		if err != nil {
-			return nil, fmt.Errorf("failed to read plugin config: %w", err)
-		}
-		rpcClient, err := ethclient.Dial(cfg.Server.Plugin.Eth.Rpc)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize rpc client: %w", err)
-		}
-		uniswapV2RouterAddress := gcommon.HexToAddress(cfg.Server.Plugin.Eth.Uniswap.V2Router)
-		uniswapCfg := uniswap.NewConfig(
-			rpcClient,
-			&uniswapV2RouterAddress,
-			2000000, // TODO: config
-			50000,   // TODO: config
-			time.Duration(cfg.Server.Plugin.Eth.Uniswap.Deadline)*time.Minute,
-		)
-		return dca.NewDCAPlugin(uniswapCfg, s.db, s.logger)
+		return dca.NewDCAPlugin(s.db, s.logger, s.pluginConfigs["dca"])
 	default:
 		return nil, fmt.Errorf("unknown plugin type: %s", pluginType)
 	}

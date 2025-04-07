@@ -21,7 +21,6 @@ import (
 	"github.com/vultisig/vultisigner/internal/tasks"
 	"github.com/vultisig/vultisigner/internal/types"
 	vv "github.com/vultisig/vultisigner/internal/vultisig_validator"
-	"github.com/vultisig/vultisigner/pkg/uniswap"
 	"github.com/vultisig/vultisigner/plugin"
 	"github.com/vultisig/vultisigner/plugin/dca"
 	"github.com/vultisig/vultisigner/plugin/payroll"
@@ -30,7 +29,6 @@ import (
 	"github.com/vultisig/vultisigner/storage/postgres"
 
 	"github.com/DataDog/datadog-go/statsd"
-	gcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-playground/validator/v10"
 	"github.com/hibiken/asynq"
@@ -57,6 +55,7 @@ type Server struct {
 	syncer        syncer.PolicySyncer
 	plugin        plugin.Plugin
 	logger        *logrus.Logger
+	pluginConfigs map[string]map[string]interface{}
 	vaultFilePath string
 	mode          string
 }
@@ -76,36 +75,24 @@ func NewServer(
 	jwtSecret string,
 	pluginType string,
 	rpcURL string,
+	pluginConfigs map[string]map[string]interface{},
 	logger *logrus.Logger,
 ) *Server {
 	logger.Infof("Server mode: %s, plugin type: %s", mode, pluginType)
 
-	rpcClient, err := ethclient.Dial(rpcURL)
-	if err != nil {
-		logger.Fatal("failed to initialize rpc client", err)
-	}
-
 	var plugin plugin.Plugin
 	var schedulerService *scheduler.SchedulerService
 	var syncerService syncer.PolicySyncer
+	var err error
 	if mode == "plugin" {
 		switch pluginType {
 		case "payroll":
-			plugin = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, rpcClient)
-		case "dca":
-			cfg, err := config.ReadConfig("config-plugin")
+			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, pluginConfigs["payroll"])
 			if err != nil {
-				logger.Fatal("failed to read plugin config", err)
+				logger.Fatal("failed to initialize payroll plugin", err)
 			}
-			uniswapV2RouterAddress := gcommon.HexToAddress(cfg.Server.Plugin.Eth.Uniswap.V2Router)
-			uniswapCfg := uniswap.NewConfig(
-				rpcClient,
-				&uniswapV2RouterAddress,
-				2000000, // TODO: config
-				50000,   // TODO: config
-				time.Duration(cfg.Server.Plugin.Eth.Uniswap.Deadline)*time.Minute,
-			)
-			plugin, err = dca.NewDCAPlugin(uniswapCfg, db, logger)
+		case "dca":
+			plugin, err = dca.NewDCAPlugin(db, logger, pluginConfigs["dca"])
 			if err != nil {
 				logger.Fatal("fail to initialize DCA plugin: ", err)
 			}
@@ -153,6 +140,7 @@ func NewServer(
 		syncer:        syncerService,
 		policyService: policyService,
 		authService:   authService,
+		pluginConfigs: pluginConfigs,
 	}
 }
 

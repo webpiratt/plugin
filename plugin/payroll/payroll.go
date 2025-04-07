@@ -4,6 +4,7 @@ import (
 	"embed"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/vultisigner/plugin"
 	"github.com/vultisig/vultisigner/storage"
@@ -19,13 +20,27 @@ type PayrollPlugin struct {
 	logger       logrus.FieldLogger
 }
 
-func NewPayrollPlugin(db storage.DatabaseStorage, logger logrus.FieldLogger, rpcClient *ethclient.Client) *PayrollPlugin {
+type PayrollPluginConfig struct {
+	rpcURL string `mapstructure:"rpc_url" json:"rpc_url"`
+}
+
+func NewPayrollPlugin(db storage.DatabaseStorage, logger logrus.FieldLogger, rawConfig map[string]interface{}) (*PayrollPlugin, error) {
+	var cfg PayrollPluginConfig
+	if err := mapstructure.Decode(rawConfig, &cfg); err != nil {
+		return nil, err
+	}
+
+	rpcClient, err := ethclient.Dial(cfg.rpcURL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &PayrollPlugin{
 		db:           db,
 		rpcClient:    rpcClient,
 		nonceManager: plugin.NewNonceManager(rpcClient),
 		logger:       logger,
-	}
+	}, nil
 }
 
 func (p *PayrollPlugin) FrontendSchema() embed.FS {

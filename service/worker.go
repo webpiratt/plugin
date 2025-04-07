@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-go/statsd"
-	gcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 
@@ -27,7 +25,6 @@ import (
 	"github.com/vultisig/vultisigner/internal/syncer"
 	"github.com/vultisig/vultisigner/internal/tasks"
 	"github.com/vultisig/vultisigner/internal/types"
-	"github.com/vultisig/vultisigner/pkg/uniswap"
 	"github.com/vultisig/vultisigner/plugin"
 	"github.com/vultisig/vultisigner/plugin/dca"
 	"github.com/vultisig/vultisigner/plugin/payroll"
@@ -47,7 +44,6 @@ type WorkerService struct {
 	inspector    *asynq.Inspector
 	plugin       plugin.Plugin
 	db           storage.DatabaseStorage
-	rpcClient    *ethclient.Client
 	syncer       syncer.PolicySyncer
 	authService  *AuthService
 }
@@ -66,27 +62,16 @@ func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client,
 		return nil, fmt.Errorf("fail to connect to database: %w", err)
 	}
 
-	rpcClient, err := ethclient.Dial(cfg.Server.Plugin.Eth.Rpc)
-	if err != nil {
-		logrus.Fatalf("Failed to connect to RPC: %v", err)
-		return nil, err
-	}
-
 	var plugin plugin.Plugin
 	if cfg.Server.Mode == "plugin" {
 		switch cfg.Server.Plugin.Type {
 		case "payroll":
-			plugin = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, rpcClient)
+			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, cfg.Plugin.PluginConfigs["payroll"])
+			if err != nil {
+				return nil, fmt.Errorf("fail to initialize payroll plugin: %w", err)
+			}
 		case "dca":
-			uniswapV2RouterAddress := gcommon.HexToAddress(cfg.Server.Plugin.Eth.Uniswap.V2Router)
-			uniswapCfg := uniswap.NewConfig(
-				rpcClient,
-				&uniswapV2RouterAddress,
-				2000000, // TODO: config
-				50000,   // TODO: config
-				time.Duration(cfg.Server.Plugin.Eth.Uniswap.Deadline)*time.Minute,
-			)
-			plugin, err = dca.NewDCAPlugin(uniswapCfg, db, logger)
+			plugin, err = dca.NewDCAPlugin(db, logger, cfg.Plugin.PluginConfigs["dca"])
 			if err != nil {
 				return nil, fmt.Errorf("fail to initialize DCA plugin: %w", err)
 			}
@@ -100,7 +85,6 @@ func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client,
 		db:           db,
 		redis:        redis,
 		blockStorage: blockStorage,
-		rpcClient:    rpcClient,
 		queueClient:  queueClient,
 		sdClient:     sdClient,
 		inspector:    inspector,
