@@ -23,6 +23,7 @@ require (
 	github.com/vultisig/commondata v0.0.0-20250331230745-5c4b32017c5b
 	github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f
 	github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74
+	github.com/vultisig/vultisigner v0.0.0-20250414071209-491f6b4b9c3b
 	google.golang.org/protobuf v1.35.1
 )
 
@@ -83,7 +84,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/otiai10/primes v0.4.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect

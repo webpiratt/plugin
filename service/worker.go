@@ -21,7 +21,6 @@ import (
 
 	"github.com/vultisig/vultiserver-plugin/common"
 	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/contexthelper"
 	"github.com/vultisig/vultiserver-plugin/internal/syncer"
 	"github.com/vultisig/vultiserver-plugin/internal/tasks"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
@@ -31,6 +30,7 @@ import (
 	"github.com/vultisig/vultiserver-plugin/relay"
 	"github.com/vultisig/vultiserver-plugin/storage"
 	"github.com/vultisig/vultiserver-plugin/storage/postgres"
+	"github.com/vultisig/vultisigner/contexthelper"
 )
 
 type WorkerService struct {
