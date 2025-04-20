@@ -366,7 +366,6 @@ func (p *DCAPlugin) ProposeTransactions(policy types.PluginPolicy) ([]types.Plug
 				DerivePath:       policy.DerivePath,
 				IsECDSA:          policy.IsEcdsa,
 				VaultPassword:    vaultPassword,
-				StartSession:     false,
 				Parties:          []string{common.PluginPartyID, common.VerifierPartyID},
 			},
 			Transaction:     hex.EncodeToString(data.RlpTxBytes),

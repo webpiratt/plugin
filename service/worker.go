@@ -439,7 +439,6 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 		}
 
 		// prepare local sign request
-		signRequest.KeysignRequest.StartSession = true
 		signRequest.KeysignRequest.Parties = []string{common.PluginPartyID, common.VerifierPartyID}
 		buf, err := json.Marshal(signRequest.KeysignRequest)
 		if err != nil {
