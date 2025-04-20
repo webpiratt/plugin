@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/vultisig/vultisigner/common"
+	"github.com/vultisig/vultiserver-plugin/common"
 	"math/big"
 	"strconv"
 	"strings"
@@ -20,7 +20,7 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
-	"github.com/vultisig/vultisigner/internal/types"
+	"github.com/vultisig/vultiserver-plugin/internal/types"
 )
 
 // TODO: remove once the plugin installation is implemented
