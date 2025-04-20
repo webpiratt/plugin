@@ -96,7 +96,6 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
 
-	req.StartSession = false
 	req.Parties = []string{common.PluginPartyID, common.VerifierPartyID}
 
 	buf, err := json.Marshal(req)
