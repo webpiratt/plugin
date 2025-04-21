@@ -30,7 +30,7 @@ import (
 	"github.com/vultisig/vultiserver-plugin/relay"
 	"github.com/vultisig/vultiserver-plugin/storage"
 	"github.com/vultisig/vultiserver-plugin/storage/postgres"
-	"github.com/vultisig/vultisigner/contexthelper"
+	"github.com/vultisig/vultiserver/contexthelper"
 )
 
 type WorkerService struct {

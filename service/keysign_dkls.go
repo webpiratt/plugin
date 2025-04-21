@@ -20,7 +20,7 @@ import (
 
 	"github.com/vultisig/vultiserver-plugin/internal/types"
 	"github.com/vultisig/vultiserver-plugin/relay"
-	vcommon "github.com/vultisig/vultisigner/common"
+	vcommon "github.com/vultisig/vultiserver/common"
 )
 
 func (t *DKLSTssService) ProcessDKLSKeysign(req types.KeysignRequest) (map[string]tss.KeysignResponse, error) {
