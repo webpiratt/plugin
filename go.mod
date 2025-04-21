@@ -16,14 +16,14 @@ require (
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/labstack/gommon v0.4.2
 	github.com/pressly/goose/v3 v3.23.0
-	github.com/redis/go-redis/v9 v9.7.0
+	github.com/redis/go-redis/v9 v9.7.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	github.com/vultisig/commondata v0.0.0-20250331230745-5c4b32017c5b
 	github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f
 	github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74
-	github.com/vultisig/vultisigner v0.0.0-20250414071209-491f6b4b9c3b
+	github.com/vultisig/vultiserver v0.0.0-20250421043311-443d711d503d
 	google.golang.org/protobuf v1.35.1
 )
 

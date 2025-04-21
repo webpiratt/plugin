@@ -7,7 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultisigner/contexthelper"
+	"github.com/vultisig/vultiserver/contexthelper"
 )
 
 type RedisStorage struct {
