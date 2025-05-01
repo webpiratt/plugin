@@ -10,13 +10,11 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/vultisig/vultiserver-plugin/common"
 	"github.com/vultisig/vultiserver-plugin/config"
 	"github.com/vultisig/vultiserver-plugin/internal/scheduler"
-	"github.com/vultisig/vultiserver-plugin/internal/sigutil"
 	"github.com/vultisig/vultiserver-plugin/internal/syncer"
 	"github.com/vultisig/vultiserver-plugin/internal/tasks"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
@@ -49,7 +47,6 @@ type Server struct {
 	sdClient      *statsd.Client
 	scheduler     *scheduler.SchedulerService
 	policyService service.Policy
-	authService   *service.AuthService
 	syncer        syncer.PolicySyncer
 	plugin        plugin.Plugin
 	logger        *logrus.Logger
@@ -116,8 +113,6 @@ func NewServer(
 		logger.Fatalf("Failed to initialize policy service: %v", err)
 	}
 
-	authService := service.NewAuthService(jwtSecret)
-
 	return &Server{
 		cfg:           cfg,
 		redis:         redis,
@@ -133,7 +128,6 @@ func NewServer(
 		logger:        logger,
 		syncer:        syncerService,
 		policyService: policyService,
-		authService:   authService,
 		pluginConfigs: pluginConfigs,
 	}
 }
@@ -157,10 +151,6 @@ func (s *Server) StartServer() error {
 	e.GET("/getDerivedPublicKey", s.GetDerivedPublicKey)
 	e.POST("/signFromPlugin", s.SignPluginMessages)
 
-	// Auth token
-	e.POST("/auth", s.Auth)
-	e.POST("/auth/refresh", s.RefreshToken)
-
 	grp := e.Group("/vault")
 	grp.POST("/create", s.CreateVault)
 	grp.POST("/reshare", s.ReshareVault)
@@ -171,7 +161,6 @@ func (s *Server) StartServer() error {
 	grp.GET("/exist/:publicKeyECDSA", s.ExistVault) // Check if Vault exists
 	//	grp.DELETE("/delete/:publicKeyECDSA", s.DeleteVault) // Delete Vault Data
 	grp.POST("/sign", s.SignMessages)       // Sign messages
-	grp.POST("/resend", s.ResendVaultEmail) // request server to send vault share , code through email again
 	grp.GET("/verify/:publicKeyECDSA/:code", s.VerifyCode)
 	grp.GET("/sign/response/:taskId", s.GetKeysignResult) // Get keysign result
 
@@ -193,33 +182,8 @@ func (s *Server) StartServer() error {
 	// policy mode is always available since it is used by both verifier server and plugin server
 	pluginGroup.POST("/policy", s.CreatePluginPolicy)
 	pluginGroup.PUT("/policy", s.UpdatePluginPolicyById)
-	pluginGroup.GET("/policy", s.GetAllPluginPolicies, s.AuthMiddleware)
-	pluginGroup.GET("/policy/history/:policyId", s.GetPluginPolicyTransactionHistory, s.AuthMiddleware)
 	pluginGroup.GET("/policy/schema", s.GetPolicySchema)
-	pluginGroup.GET("/policy/:policyId", s.GetPluginPolicyById, s.AuthMiddleware)
 	pluginGroup.DELETE("/policy/:policyId", s.DeletePluginPolicyById)
-
-	if s.mode == "verifier" {
-		e.POST("/login", s.UserLogin)
-		e.GET("/users/me", s.GetLoggedUser, s.userAuthMiddleware)
-
-		pluginsGroup := e.Group("/plugins")
-		pluginsGroup.GET("", s.GetPlugins)
-		pluginsGroup.GET("/:pluginId", s.GetPlugin)
-		pluginsGroup.POST("", s.CreatePlugin, s.userAuthMiddleware)
-		pluginsGroup.PATCH("/:pluginId", s.UpdatePlugin, s.userAuthMiddleware)
-		pluginsGroup.DELETE("/:pluginId", s.DeletePlugin, s.userAuthMiddleware)
-
-		pricingsGroup := e.Group("/pricings")
-		pricingsGroup.GET("/:pricingId", s.GetPricing)
-		pricingsGroup.POST("", s.CreatePricing, s.userAuthMiddleware)
-		pricingsGroup.DELETE("/:pricingId", s.DeletePricing, s.userAuthMiddleware)
-	}
-
-	syncGroup := e.Group("/sync")
-	syncGroup.Use(s.AuthMiddleware)
-	syncGroup.POST("/transaction", s.CreateTransaction)
-	syncGroup.PUT("/transaction", s.UpdateTransaction)
 
 	return e.Start(fmt.Sprintf(":%d", s.cfg.Server.Port))
 }
@@ -613,74 +577,6 @@ func (s *Server) ExistVault(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// ResendVaultEmail is a handler to request server to send vault share , code through email again
-func (s *Server) ResendVaultEmail(c echo.Context) error {
-	var req types.VaultResendRequest
-	if err := c.Bind(&req); err != nil {
-		return fmt.Errorf("fail to parse request, err: %w", err)
-	}
-	publicKeyECDSA := req.PublicKeyECDSA
-	if publicKeyECDSA == "" {
-		s.logger.Errorln("public key is required")
-		return c.NoContent(http.StatusBadRequest)
-	}
-	if !s.isValidHash(publicKeyECDSA) {
-		return c.NoContent(http.StatusBadRequest)
-	}
-	key := fmt.Sprintf("resend_%s", publicKeyECDSA)
-	result, err := s.redis.Get(c.Request().Context(), key)
-	if err == nil && result != "" {
-		return c.NoContent(http.StatusTooManyRequests)
-	}
-	// user will allow to request once per minute
-	if err := s.redis.Set(c.Request().Context(), key, key, 3*time.Minute); err != nil {
-		s.logger.Errorf("fail to set , err: %v", err)
-	}
-	if err := s.sdClient.Count("vault.resend", 1, nil, 1); err != nil {
-		s.logger.Errorf("fail to count metric, err: %v", err)
-	}
-	if req.Password == "" {
-		s.logger.Errorln("password is required")
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	filePathName := common.GetVaultBackupFilename(publicKeyECDSA)
-	content, err := s.blockStorage.GetFile(filePathName)
-	if err != nil {
-		s.logger.Errorf("fail to read file in ResendVaultEmail, err: %v", err)
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	vault, err := common.DecryptVaultFromBackup(req.Password, content)
-	if err != nil {
-		s.logger.Errorf("fail to decrypt vault from the backup, err: %v", err)
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	code, err := s.createVerificationCode(c.Request().Context(), publicKeyECDSA)
-	if err != nil {
-		return fmt.Errorf("failed to create verification code: %w", err)
-	}
-	emailRequest := types.EmailRequest{
-		Email:       req.Email,
-		FileName:    common.GetVaultName(vault),
-		FileContent: string(content),
-		VaultName:   vault.Name,
-		Code:        code,
-	}
-	buf, err := json.Marshal(emailRequest)
-	if err != nil {
-		return fmt.Errorf("json.Marshal failed: %w", err)
-	}
-	taskInfo, err := s.client.Enqueue(asynq.NewTask(tasks.TypeEmailVaultBackup, buf),
-		asynq.Retention(10*time.Minute),
-		asynq.Queue(tasks.EMAIL_QUEUE_NAME))
-	if err != nil {
-		s.logger.Errorf("fail to enqueue email task: %v", err)
-	}
-	s.logger.Info("Email task enqueued: ", taskInfo.ID)
-	return nil
-}
 
 func (s *Server) createVerificationCode(ctx context.Context, publicKeyECDSA string) (string, error) {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -774,64 +670,3 @@ func (s *Server) UpdateTransaction(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (s *Server) Auth(c echo.Context) error {
-	var req struct {
-		Message      string `json:"message"`
-		Signature    string `json:"signature"`
-		DerivePath   string `json:"derive_path"`
-		ChainCodeHex string `json:"chain_code_hex"`
-		PublicKey    string `json:"public_key"`
-	}
-
-	if err := c.Bind(&req); err != nil {
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	msgBytes, err := hex.DecodeString(strings.TrimPrefix(req.Message, "0x"))
-	if err != nil {
-		s.logger.Errorf("failed to decode message: %v", err)
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	sigBytes, err := hex.DecodeString(strings.TrimPrefix(req.Signature, "0x"))
-	if err != nil {
-		s.logger.Errorf("failed to decode signature: %v", err)
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	success, err := sigutil.VerifySignature(req.PublicKey, req.ChainCodeHex, req.DerivePath, msgBytes, sigBytes)
-	if err != nil {
-		s.logger.Errorf("signature verification failed: %v", err)
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	if !success {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-
-	token, err := s.authService.GenerateToken()
-	if err != nil {
-		s.logger.Error("failed to generate token:", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"token": token})
-}
-
-func (s *Server) RefreshToken(c echo.Context) error {
-	var req struct {
-		Token string `json:"token"`
-	}
-
-	if err := c.Bind(&req); err != nil {
-		s.logger.Errorf("fail to decode token, err: %v", err)
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	newToken, err := s.authService.RefreshToken(req.Token)
-	if err != nil {
-		s.logger.Errorf("fail to refresh token, err: %v", err)
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or expired token"})
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"token": newToken})
-}

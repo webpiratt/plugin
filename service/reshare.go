@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
 	keygenType "github.com/vultisig/commondata/go/vultisig/keygen/v1"
 	vaultType "github.com/vultisig/commondata/go/vultisig/vault/v1"
@@ -21,8 +19,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/vultisig/vultiserver-plugin/common"
-	"github.com/vultisig/vultiserver-plugin/internal/tasks"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
 	"github.com/vultisig/vultiserver-plugin/relay"
 )
 
@@ -189,28 +185,7 @@ func (s *WorkerService) SaveVaultAndScheduleEmail(vault *vaultType.Vault,
 		}
 		return fmt.Errorf("fail to write file, err: %w", err)
 	}
-	code, err := s.createVerificationCode(vault.PublicKeyEcdsa)
-	if err != nil {
-		return fmt.Errorf("failed to create verification code: %w", err)
-	}
-	emailRequest := types.EmailRequest{
-		Email:       email,
-		FileName:    common.GetVaultName(vault),
-		FileContent: base64VaultContent,
-		VaultName:   vault.Name,
-		Code:        code,
-	}
-	buf, err := json.Marshal(emailRequest)
-	if err != nil {
-		return fmt.Errorf("json.Marshal failed: %w", err)
-	}
-	taskInfo, err := s.queueClient.Enqueue(asynq.NewTask(tasks.TypeEmailVaultBackup, buf),
-		asynq.Retention(10*time.Minute),
-		asynq.Queue(tasks.EMAIL_QUEUE_NAME))
-	if err != nil {
-		s.logger.Errorf("fail to enqueue email task: %v", err)
-	}
-	s.logger.Info("Email task enqueued: ", taskInfo.ID)
+	
 	return nil
 }
 func getOldParties(newParties []string, oldSignerCommittee []string) []string {

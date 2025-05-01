@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -45,11 +44,10 @@ type WorkerService struct {
 	plugin       plugin.Plugin
 	db           storage.DatabaseStorage
 	syncer       syncer.PolicySyncer
-	authService  *AuthService
 }
 
 // NewWorker creates a new worker service
-func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client, sdClient *statsd.Client, syncer syncer.PolicySyncer, authService *AuthService, blockStorage *storage.BlockStorage, inspector *asynq.Inspector) (*WorkerService, error) {
+func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client, sdClient *statsd.Client, syncer syncer.PolicySyncer, blockStorage *storage.BlockStorage, inspector *asynq.Inspector) (*WorkerService, error) {
 	logger := logrus.WithField("service", "worker").Logger
 
 	redis, err := storage.NewRedisStorage(cfg)
@@ -91,7 +89,6 @@ func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client,
 		plugin:       plugin,
 		logger:       logger,
 		syncer:       syncer,
-		authService:  authService,
 		verifierPort: verifierPort,
 	}, nil
 }
@@ -208,97 +205,6 @@ func (s *WorkerService) HandleKeySign(ctx context.Context, t *asynq.Task) error 
 	return nil
 }
 
-func (s *WorkerService) HandleEmailVaultBackup(ctx context.Context, t *asynq.Task) error {
-	if err := contexthelper.CheckCancellation(ctx); err != nil {
-		return err
-	}
-	s.incCounter("worker.vault.backup.email", []string{})
-	var req types.EmailRequest
-	if err := json.Unmarshal(t.Payload(), &req); err != nil {
-		s.logger.Errorf("json.Unmarshal failed: %v", err)
-		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
-	}
-	s.logger.WithFields(logrus.Fields{
-		"email":    req.Email,
-		"filename": req.FileName,
-	}).Info("sending email")
-	emailServer := "https://mandrillapp.com/api/1.0/messages/send-template"
-	payload := MandrillPayload{
-		Key:          s.cfg.EmailServer.ApiKey,
-		TemplateName: "fastvault",
-		TemplateContent: []MandrilMergeVarContent{
-			{
-				Name:    "VAULT_NAME",
-				Content: req.VaultName,
-			},
-			{
-				Name:    "VERIFICATION_CODE",
-				Content: req.Code,
-			},
-		},
-		Message: MandrillMessage{
-			To: []MandrillTo{
-				{
-					Email: req.Email,
-					Type:  "to",
-				},
-			},
-			MergeVars: []MandrillVar{
-				{
-					Rcpt: req.Email,
-					Vars: []MandrilMergeVarContent{
-						{
-							Name:    "VAULT_NAME",
-							Content: req.VaultName,
-						},
-						{
-							Name:    "VERIFICATION_CODE",
-							Content: req.Code,
-						},
-					},
-				},
-			},
-			SendingDomain: "vultisig.com",
-			Attachments: []MandrillAttachment{
-				{
-					Type:    "application/octet-stream",
-					Name:    req.FileName,
-					Content: base64.StdEncoding.EncodeToString([]byte(req.FileContent)),
-				},
-			},
-		},
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		s.logger.Errorf("json.Marshal failed: %v", err)
-		return fmt.Errorf("json.Marshal failed: %v: %w", err, asynq.SkipRetry)
-	}
-	resp, err := http.Post(emailServer, "application/json", bytes.NewReader(payloadBytes))
-	if err != nil {
-		s.logger.Errorf("http.Post failed: %v", err)
-		return fmt.Errorf("http.Post failed: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			s.logger.Errorf("failed to close body: %v", err)
-		}
-	}()
-	if resp.StatusCode != http.StatusOK {
-		s.logger.Errorf("http.Post failed: %s", resp.Status)
-		return fmt.Errorf("http.Post failed: %s: %w", resp.Status, asynq.SkipRetry)
-	}
-	result, err := io.ReadAll(resp.Body)
-	if err != nil {
-		s.logger.Errorf("io.ReadAll failed: %v", err)
-		return fmt.Errorf("io.ReadAll failed: %w", err)
-	}
-	s.logger.Info(string(result))
-	if _, err := t.ResultWriter().Write([]byte("email sent")); err != nil {
-		return fmt.Errorf("t.ResultWriter.Write failed: %v", err)
-	}
-	return nil
-}
-
 func (s *WorkerService) HandleReshare(ctx context.Context, t *asynq.Task) error {
 	if err := contexthelper.CheckCancellation(ctx); err != nil {
 		return err
@@ -400,11 +306,6 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 		return fmt.Errorf("failed to create signing request: %v: %w", err, asynq.SkipRetry)
 	}
 
-	jwtToken, err := s.authService.GenerateToken()
-	if err != nil {
-		s.logger.Errorf("Failed to generate jwt token: %v", err)
-	}
-
 	for _, signRequest := range signRequests {
 		policyUUID, err := uuid.Parse(signRequest.PolicyID)
 		if err != nil {
@@ -428,12 +329,12 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 			Metadata: metadata,
 		}
 
-		if err := s.upsertAndSyncTransaction(ctx, syncer.CreateAction, &newTx, jwtToken); err != nil {
-			return fmt.Errorf("upsertAndSyncTransaction failed: %w", err)
+		if err := s.upsertTransaction(ctx, &newTx); err != nil {
+			return fmt.Errorf("upsertTransaction failed: %w", err)
 		}
 
 		// start TSS signing process
-		err = s.initiateTxSignWithVerifier(ctx, signRequest, metadata, newTx, jwtToken)
+		err = s.initiateTxSignWithVerifier(ctx, signRequest, metadata, newTx)
 		if err != nil {
 			return err
 		}
@@ -468,8 +369,8 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 			metadata["task_id"] = ti.ID
 			newTx.Status = types.StatusSigningFailed
 			newTx.Metadata = metadata
-			if err := s.upsertAndSyncTransaction(ctx, syncer.UpdateAction, &newTx, jwtToken); err != nil {
-				s.logger.Errorf("upsertAndSyncTransaction failed: %v", err)
+			if err := s.upsertTransaction(ctx, &newTx); err != nil {
+				s.logger.Errorf("upsertTransaction failed: %v", err)
 			}
 			return err
 		}
@@ -479,8 +380,8 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 		metadata["result"] = result
 		newTx.Status = types.StatusSigned
 		newTx.Metadata = metadata
-		if err := s.upsertAndSyncTransaction(ctx, syncer.UpdateAction, &newTx, jwtToken); err != nil {
-			return fmt.Errorf("upsertAndSyncTransaction failed: %v", err)
+		if err := s.upsertTransaction(ctx, &newTx); err != nil {
+			return fmt.Errorf("upsertTransaction failed: %v", err)
 		}
 
 		var signatures map[string]tss.KeysignResponse
@@ -500,23 +401,23 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 
 			newTx.Status = types.StatusRejected
 			newTx.Metadata = metadata
-			if err := s.upsertAndSyncTransaction(ctx, syncer.UpdateAction, &newTx, jwtToken); err != nil {
-				s.logger.Errorf("upsertAndSyncTransaction failed: %v", err)
+			if err := s.upsertTransaction(ctx, &newTx); err != nil {
+				s.logger.Errorf("upsertTransaction failed: %v", err)
 			}
 			return fmt.Errorf("fail to complete signing: %w", err)
 		}
 
 		newTx.Status = types.StatusMined
 		newTx.Metadata = metadata
-		if err := s.upsertAndSyncTransaction(ctx, syncer.UpdateAction, &newTx, jwtToken); err != nil {
-			s.logger.Errorf("upsertAndSyncTransaction failed: %v", err)
+		if err := s.upsertTransaction(ctx, &newTx); err != nil {
+			s.logger.Errorf("upsertTransaction failed: %v", err)
 		}
 	}
 
 	return nil
 }
 
-func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequest types.PluginKeysignRequest, metadata map[string]interface{}, newTx types.TransactionHistory, jwtToken string) error {
+func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequest types.PluginKeysignRequest, metadata map[string]interface{}, newTx types.TransactionHistory) error {
 	signBytes, err := json.Marshal(signRequest)
 	if err != nil {
 		s.logger.Errorf("Failed to marshal sign request: %v", err)
@@ -532,8 +433,8 @@ func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequ
 		metadata["error"] = err.Error()
 		newTx.Status = types.StatusSigningFailed
 		newTx.Metadata = metadata
-		if err = s.upsertAndSyncTransaction(ctx, syncer.UpdateAction, &newTx, jwtToken); err != nil {
-			s.logger.Errorf("upsertAndSyncTransaction failed: %v", err)
+		if err = s.upsertTransaction(ctx, &newTx); err != nil {
+			s.logger.Errorf("upsertTransaction failed: %v", err)
 		}
 		return err
 	}
@@ -549,37 +450,31 @@ func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequ
 		metadata["error"] = string(respBody)
 		newTx.Status = types.StatusSigningFailed
 		newTx.Metadata = metadata
-		if err := s.upsertAndSyncTransaction(ctx, syncer.UpdateAction, &newTx, jwtToken); err != nil {
-			s.logger.Errorf("upsertAndSyncTransaction failed: %v", err)
+		if err := s.upsertTransaction(ctx, &newTx); err != nil {
+			s.logger.Errorf("upsertTransaction failed: %v", err)
 		}
 		return err
 	}
 	return nil
 }
 
-func (s *WorkerService) upsertAndSyncTransaction(ctx context.Context, action syncer.Action, tx *types.TransactionHistory, jwtToken string) error {
-	s.logger.Info("upsertAndSyncTransaction started with action: ", action)
+func (s *WorkerService) upsertTransaction(ctx context.Context, tx *types.TransactionHistory) error {
+	s.logger.Info("upsertTransaction started")
 	dbTx, err := s.db.Pool().Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer dbTx.Rollback(ctx)
 
-	if action == syncer.CreateAction {
-		txID, err := s.db.CreateTransactionHistoryTx(ctx, dbTx, *tx)
-		if err != nil {
-			s.logger.Errorf("Failed to create (or update) transaction history tx: %v", err)
+	txID, err := s.db.CreateTransactionHistoryTx(ctx, dbTx, *tx)
+	if err != nil {
+		s.logger.Errorf("Failed to create (or update) transaction history tx: %v", err)
 			return fmt.Errorf("failed to create transaction history: %w", err)
 		}
-		tx.ID = txID
-	} else {
-		if err = s.db.UpdateTransactionStatusTx(ctx, dbTx, tx.ID, tx.Status, tx.Metadata); err != nil {
-			return fmt.Errorf("failed to update transaction status: %w", err)
-		}
-	}
+	tx.ID = txID
 
-	if err = s.syncer.SyncTransaction(action, jwtToken, *tx); err != nil {
-		return fmt.Errorf("failed to sync transaction: %w", err)
+	if err = s.db.UpdateTransactionStatusTx(ctx, dbTx, tx.ID, tx.Status, tx.Metadata); err != nil {
+		return fmt.Errorf("failed to update transaction status: %w", err)
 	}
 
 	if err = dbTx.Commit(ctx); err != nil {
