@@ -71,7 +71,6 @@ func main() {
 	mux.HandleFunc(tasks.TypeKeyGenerationDKLS, workerService.HandleKeyGenerationDKLS)
 	mux.HandleFunc(tasks.TypeKeySignDKLS, workerService.HandleKeySignDKLS)
 	mux.HandleFunc(tasks.TypeReshareDKLS, workerService.HandleReshareDKLS)
-	mux.HandleFunc(tasks.TypeMigrate, workerService.HandleMigrateDKLS)
 	if err := srv.Run(mux); err != nil {
 		panic(fmt.Errorf("could not run server: %w", err))
 	}
