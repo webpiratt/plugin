@@ -66,7 +66,6 @@ func main() {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(tasks.TypeKeyGeneration, workerService.HandleKeyGeneration)
 	mux.HandleFunc(tasks.TypeKeySign, workerService.HandleKeySign)
-	mux.HandleFunc(tasks.TypeEmailVaultBackup, workerService.HandleEmailVaultBackup)
 	mux.HandleFunc(tasks.TypeReshare, workerService.HandleReshare)
 	mux.HandleFunc(tasks.TypePluginTransaction, workerService.HandlePluginTransaction)
 	mux.HandleFunc(tasks.TypeKeyGenerationDKLS, workerService.HandleKeyGenerationDKLS)

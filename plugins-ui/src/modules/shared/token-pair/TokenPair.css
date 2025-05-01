@@ -1,9 +1,0 @@
-.pair {
-    display: flex;
-    align-items: center;
-}
-
-.token-icon-right {
-    margin-left: -10px;
-    margin-right: 2px;
-}
