@@ -15,6 +15,27 @@ import (
 	"github.com/vultisig/vultiserver-plugin/internal/types"
 )
 
+type PayrollPolicy struct {
+	ChainID    []string           `json:"chain_id"`
+	TokenID    []string           `json:"token_id"`
+	Recipients []PayrollRecipient `json:"recipients"`
+	Schedule   Schedule           `json:"schedule"`
+}
+
+type PayrollRecipient struct {
+	Address string `json:"address"`
+	Amount  string `json:"amount"`
+}
+
+// This is duplicated between DCA and Payroll to avoid a 
+// circular top-level dependency on the types package
+type Schedule struct {
+	Frequency string `json:"frequency"`
+	Interval  string `json:"interval"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time,omitempty"`
+}
+
 func (p *PayrollPlugin) ValidateProposedTransactions(policy types.PluginPolicy, txs []types.PluginKeysignRequest) error {
 	err := p.ValidatePluginPolicy(policy)
 	if err != nil {
@@ -26,7 +47,7 @@ func (p *PayrollPlugin) ValidateProposedTransactions(policy types.PluginPolicy, 
 		return fmt.Errorf("failed to parse ABI: %v", err)
 	}
 
-	var payrollPolicy types.PayrollPolicy
+	var payrollPolicy PayrollPolicy
 	if err := json.Unmarshal(policy.Policy, &payrollPolicy); err != nil {
 		return fmt.Errorf("fail to unmarshal payroll policy, err: %w", err)
 	}
@@ -91,7 +112,7 @@ func (p *PayrollPlugin) ValidatePluginPolicy(policyDoc types.PluginPolicy) error
 		return fmt.Errorf("policy does not match plugin type, expected: %s, got: %s", PLUGIN_TYPE, policyDoc.PluginType)
 	}
 
-	var payrollPolicy types.PayrollPolicy
+	var payrollPolicy PayrollPolicy
 	if err := json.Unmarshal(policyDoc.Policy, &payrollPolicy); err != nil {
 		return fmt.Errorf("fail to unmarshal payroll policy, err: %w", err)
 	}
