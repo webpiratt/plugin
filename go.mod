@@ -1,8 +1,6 @@
 module github.com/vultisig/vultiserver-plugin
 
-go 1.23.0
-
-toolchain go1.24.0
+go 1.24.2
 
 require (
 	github.com/DataDog/datadog-go v4.8.3+incompatible
