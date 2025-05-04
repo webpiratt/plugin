@@ -100,7 +100,7 @@ func (p *DCAPlugin) SigningComplete(
 	signRequest types.PluginKeysignRequest,
 	policy types.PluginPolicy,
 ) error {
-	var dcaPolicy types.DCAPolicy
+	var dcaPolicy DCAPolicy
 	if err := json.Unmarshal(policy.Policy, &dcaPolicy); err != nil {
 		return fmt.Errorf("fail to unmarshal DCA policy: %w", err)
 	}
@@ -173,7 +173,7 @@ func (p *DCAPlugin) ValidatePluginPolicy(policyDoc types.PluginPolicy) error {
 		return fmt.Errorf("invalid public_key")
 	}
 
-	var dcaPolicy types.DCAPolicy
+	var dcaPolicy DCAPolicy
 	if err := json.Unmarshal(policyDoc.Policy, &dcaPolicy); err != nil {
 		return fmt.Errorf("fail to unmarshal DCA policy: %w", err)
 	}
@@ -308,7 +308,7 @@ func (p *DCAPlugin) ProposeTransactions(policy types.PluginPolicy) ([]types.Plug
 		return txs, fmt.Errorf("fail to validate plugin policy: %w", err)
 	}
 
-	var dcaPolicy types.DCAPolicy
+	var dcaPolicy DCAPolicy
 	if err := json.Unmarshal(policy.Policy, &dcaPolicy); err != nil {
 		return txs, fmt.Errorf("fail to unmarshal dca policy, err: %w", err)
 	}
@@ -391,7 +391,7 @@ func (p *DCAPlugin) ValidateProposedTransactions(policy types.PluginPolicy, txs 
 		return fmt.Errorf("failed to validate plugin policy: %w", err)
 	}
 
-	var dcaPolicy types.DCAPolicy
+	var dcaPolicy DCAPolicy
 	if err := json.Unmarshal(policy.Policy, &dcaPolicy); err != nil {
 		return fmt.Errorf("failed to unmarshal DCA policy: %w", err)
 	}
