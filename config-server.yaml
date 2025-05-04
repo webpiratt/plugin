@@ -22,6 +22,4 @@ block_storage:
 
 relay:
   server: "https://api.vultisig.com/router"
-
-email_server:
-  api_key: "your-mandrill-api-key"
+  

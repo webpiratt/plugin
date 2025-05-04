@@ -41,9 +41,6 @@ block_storage:
   force_path_style: true
   disable_ssl: true
 
-email_server:
-  api_key: key-1234567890
-
 datadog:
   host: localhost
   port: 8125

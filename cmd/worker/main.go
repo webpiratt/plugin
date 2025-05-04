@@ -56,7 +56,6 @@ func main() {
 			Concurrency: 10,
 			Queues: map[string]int{
 				tasks.QUEUE_NAME:         10,
-				tasks.EMAIL_QUEUE_NAME:   100,
 				"scheduled_plugin_queue": 10, // new queue
 			},
 		},
