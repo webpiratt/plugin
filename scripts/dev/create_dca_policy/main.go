@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
+	"github.com/vultisig/vultiserver-plugin/plugin/dca"
 	vtypes "github.com/vultisig/verifier/types"
 )
 
@@ -86,13 +86,13 @@ func main() {
 		Signature:     "0x0000000000000000000000000000000000000000000000000000000000000000",
 	}
 
-	dcaPolicy := dtypes.DCAPolicy{
+	dcaPolicy := dca.DCAPolicy{
 		ChainID:            "1",
 		SourceTokenID:      sourceTokenContract,
 		DestinationTokenID: destinationTokenContract,
 		TotalAmount:        swapAmountIn,
 		TotalOrders:        "2",
-		Schedule: dtypes.Schedule{
+		Schedule: dca.Schedule{
 			Frequency: frequency,
 			Interval:  "",
 			StartTime: time.Now().UTC().Add(20 * time.Second).Format(time.RFC3339),
