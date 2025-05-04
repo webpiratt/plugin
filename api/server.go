@@ -67,7 +67,6 @@ func NewServer(
 	sdClient *statsd.Client,
 	vaultFilePath string,
 	mode string,
-	jwtSecret string,
 	pluginType string,
 	rpcURL string,
 	pluginConfigs map[string]map[string]interface{},
@@ -624,7 +623,6 @@ func (s *Server) VerifyCode(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// TODO: Make those handlers require jwt auth
 func (s *Server) CreateTransaction(c echo.Context) error {
 	var reqTx types.TransactionHistory
 	if err := c.Bind(&reqTx); err != nil {
