@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/vultisig/vultiserver-plugin/config"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
+	dtypes "github.com/vultisig/vultiserver-plugin/plugin/dca"
 )
 
 var vaultName string
@@ -85,20 +86,20 @@ func main() {
 		Signature:     "0x0000000000000000000000000000000000000000000000000000000000000000",
 	}
 
-	payrollPolicy := types.DCAPolicy{
+	dcaPolicy := dtypes.DCAPolicy{
 		ChainID:            "1",
 		SourceTokenID:      sourceTokenContract,
 		DestinationTokenID: destinationTokenContract,
 		TotalAmount:        swapAmountIn,
 		TotalOrders:        "2",
-		Schedule: types.Schedule{
+		Schedule: dtypes.Schedule{
 			Frequency: frequency,
 			Interval:  "",
 			StartTime: time.Now().UTC().Add(20 * time.Second).Format(time.RFC3339),
 		},
 	}
 
-	policyBytes, err := json.Marshal(payrollPolicy)
+	policyBytes, err := json.Marshal(dcaPolicy)
 	if err != nil {
 		panic(err)
 	}
