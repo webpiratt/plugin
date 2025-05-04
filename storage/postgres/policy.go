@@ -8,15 +8,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/vultisig/vultiserver-plugin/internal/types"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
-func (p *PostgresBackend) GetPluginPolicy(ctx context.Context, id string) (types.PluginPolicy, error) {
+func (p *PostgresBackend) GetPluginPolicy(ctx context.Context, id string) (vtypes.PluginPolicy, error) {
 	if p.pool == nil {
-		return types.PluginPolicy{}, fmt.Errorf("database pool is nil")
+		return vtypes.PluginPolicy{}, fmt.Errorf("database pool is nil")
 	}
 
-	var policy types.PluginPolicy
+	var policy vtypes.PluginPolicy
 	var policyJSON []byte
 
 	query := `
@@ -40,16 +40,16 @@ func (p *PostgresBackend) GetPluginPolicy(ctx context.Context, id string) (types
 	)
 
 	if err != nil {
-		return types.PluginPolicy{}, fmt.Errorf("failed to get policy: %w", err)
+		return vtypes.PluginPolicy{}, fmt.Errorf("failed to get policy: %w", err)
 	}
 	policy.Policy = json.RawMessage(policyJSON)
 
 	return policy, nil
 }
 
-func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey string, pluginType string) ([]types.PluginPolicy, error) {
+func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey string, pluginType string) ([]vtypes.PluginPolicy, error) {
 	if p.pool == nil {
-		return []types.PluginPolicy{}, fmt.Errorf("database pool is nil")
+		return []vtypes.PluginPolicy{}, fmt.Errorf("database pool is nil")
 	}
 
 	query := `
@@ -63,9 +63,9 @@ func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey st
 		return nil, err
 	}
 	defer rows.Close()
-	var policies []types.PluginPolicy
+	var policies []vtypes.PluginPolicy
 	for rows.Next() {
-		var policy types.PluginPolicy
+		var policy vtypes.PluginPolicy
 		err := rows.Scan(
 			&policy.ID,
 			&policy.PublicKey,
@@ -89,7 +89,7 @@ func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey st
 	return policies, nil
 }
 
-func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy types.PluginPolicy) (*types.PluginPolicy, error) {
+func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
 	policyJSON, err := json.Marshal(policy.Policy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal policy: %w", err)
@@ -102,7 +102,7 @@ func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
     RETURNING id, public_key, is_ecdsa, chain_code_hex, derive_path, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
 	`
 
-	var insertedPolicy types.PluginPolicy
+	var insertedPolicy vtypes.PluginPolicy
 	err = dbTx.QueryRow(ctx, query,
 		policy.ID,
 		policy.PublicKey,
@@ -137,7 +137,7 @@ func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 	return &insertedPolicy, nil
 }
 
-func (p *PostgresBackend) UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy types.PluginPolicy) (*types.PluginPolicy, error) {
+func (p *PostgresBackend) UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
 	policyJSON, err := json.Marshal(policy.Policy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal policy: %w", err)
@@ -155,7 +155,7 @@ func (p *PostgresBackend) UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 		RETURNING id, public_key, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
 	`
 
-	var updatedPolicy types.PluginPolicy
+	var updatedPolicy vtypes.PluginPolicy
 	err = dbTx.QueryRow(ctx, query,
 		policy.ID,
 		policy.PublicKey,

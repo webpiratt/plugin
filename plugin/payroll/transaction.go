@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 // TODO: remove once the plugin installation is implemented
@@ -29,7 +30,7 @@ const (
 	hexEncryptionKey = "hexencryptionkey"
 )
 
-func (p *PayrollPlugin) ProposeTransactions(policy types.PluginPolicy) ([]types.PluginKeysignRequest, error) {
+func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types.PluginKeysignRequest, error) {
 	var txs []types.PluginKeysignRequest
 	err := p.ValidatePluginPolicy(policy)
 	if err != nil {
@@ -206,7 +207,7 @@ func (p *PayrollPlugin) generatePayrollTransaction(amountString, recipientString
 	return txHash, rawTx, nil
 }
 
-func (p *PayrollPlugin) SigningComplete(ctx context.Context, signature tss.KeysignResponse, signRequest types.PluginKeysignRequest, policy types.PluginPolicy) error {
+func (p *PayrollPlugin) SigningComplete(ctx context.Context, signature tss.KeysignResponse, signRequest types.PluginKeysignRequest, policy vtypes.PluginPolicy) error {
 	R, S, V, originalTx, chainID, _, err := p.convertData(signature, signRequest, policy)
 	if err != nil {
 		return fmt.Errorf("failed to convert R and S: %v", err)
@@ -249,7 +250,7 @@ func (p *PayrollPlugin) SigningComplete(ctx context.Context, signature tss.Keysi
 	return p.monitorTransaction(signedTx)
 }
 
-func (p *PayrollPlugin) convertData(signature tss.KeysignResponse, signRequest types.PluginKeysignRequest, policy types.PluginPolicy) (R *big.Int, S *big.Int, V *big.Int, originalTx *gtypes.Transaction, chainID *big.Int, recoveryID int64, err error) {
+func (p *PayrollPlugin) convertData(signature tss.KeysignResponse, signRequest types.PluginKeysignRequest, policy vtypes.PluginPolicy) (R *big.Int, S *big.Int, V *big.Int, originalTx *gtypes.Transaction, chainID *big.Int, recoveryID int64, err error) {
 	// convert R and S from hex strings to big.Int
 	R = new(big.Int)
 	R.SetString(signature.R, 16)

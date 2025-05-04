@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/vultisig/vultiserver-plugin/config"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
-	dtypes "github.com/vultisig/vultiserver-plugin/plugin/dca"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 var vaultName string
@@ -75,7 +75,7 @@ func main() {
 	frequency = frequency[:len(frequency)-1]
 
 	policyId := uuid.New().String()
-	policy := types.PluginPolicy{
+	policy := vtypes.PluginPolicy{
 		ID:            policyId,
 		PublicKey:     key,
 		PluginID:      "dca",

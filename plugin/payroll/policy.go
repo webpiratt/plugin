@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 type PayrollPolicy struct {
@@ -107,7 +108,7 @@ func (p *PayrollPlugin) ValidateProposedTransactions(policy types.PluginPolicy, 
 	return nil
 }
 
-func (p *PayrollPlugin) ValidatePluginPolicy(policyDoc types.PluginPolicy) error {
+func (p *PayrollPlugin) ValidatePluginPolicy(policyDoc vtypes.PluginPolicy) error {
 	if policyDoc.PluginType != PLUGIN_TYPE {
 		return fmt.Errorf("policy does not match plugin type, expected: %s, got: %s", PLUGIN_TYPE, policyDoc.PluginType)
 	}

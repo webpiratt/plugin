@@ -19,7 +19,7 @@ import (
 	"github.com/vultisig/vultiserver-plugin/plugin"
 	"github.com/vultisig/vultiserver-plugin/plugin/dca"
 	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
-
+	vtypes "github.com/vultisig/verifier/types"
 	gtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
@@ -200,7 +200,7 @@ func (s *Server) GetAllPluginPolicies(c echo.Context) error {
 }
 
 func (s *Server) CreatePluginPolicy(c echo.Context) error {
-	var policy types.PluginPolicy
+	var policy vtypes.PluginPolicy
 	if err := c.Bind(&policy); err != nil {
 		return fmt.Errorf("fail to parse request, err: %w", err)
 	}
@@ -265,7 +265,7 @@ func (s *Server) CreatePluginPolicy(c echo.Context) error {
 }
 
 func (s *Server) UpdatePluginPolicyById(c echo.Context) error {
-	var policy types.PluginPolicy
+	var policy vtypes.PluginPolicy
 	if err := c.Bind(&policy); err != nil {
 		return fmt.Errorf("fail to parse request, err: %w", err)
 	}
@@ -466,7 +466,7 @@ func (s *Server) initializePlugin(pluginType string) (plugin.Plugin, error) {
 		return nil, fmt.Errorf("unknown plugin type: %s", pluginType)
 	}
 }
-func (s *Server) verifyPolicySignature(policy types.PluginPolicy, update bool) bool {
+func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) bool {
 	msgHex, err := policyToMessageHex(policy, update)
 	if err != nil {
 		s.logger.Error(fmt.Errorf("failed to convert policy to message hex: %w", err))
@@ -493,7 +493,7 @@ func (s *Server) verifyPolicySignature(policy types.PluginPolicy, update bool) b
 	return isVerified
 }
 
-func policyToMessageHex(policy types.PluginPolicy, isUpdate bool) (string, error) {
+func policyToMessageHex(policy vtypes.PluginPolicy, isUpdate bool) (string, error) {
 	if !isUpdate {
 		policy.ID = ""
 	}

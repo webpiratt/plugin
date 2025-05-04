@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 const (
@@ -29,8 +29,8 @@ const (
 )
 
 type PolicySyncer interface {
-	CreatePolicySync(policy types.PluginPolicy) error
-	UpdatePolicySync(policy types.PluginPolicy) error
+	CreatePolicySync(policy vtypes.PluginPolicy) error
+	UpdatePolicySync(policy vtypes.PluginPolicy) error
 	DeletePolicySync(policyID, signature string) error
 }
 
@@ -50,7 +50,7 @@ func NewPolicySyncer(logger *logrus.Logger, serverHost string, serverPort int64)
 	}
 }
 
-func (s *Syncer) CreatePolicySync(policy types.PluginPolicy) error {
+func (s *Syncer) CreatePolicySync(policy vtypes.PluginPolicy) error {
 	s.logger.WithFields(logrus.Fields{
 		"policy_id":   policy.ID,
 		"plugin_type": policy.PluginType,
@@ -92,7 +92,7 @@ func (s *Syncer) CreatePolicySync(policy types.PluginPolicy) error {
 	})
 }
 
-func (s *Syncer) UpdatePolicySync(policy types.PluginPolicy) error {
+func (s *Syncer) UpdatePolicySync(policy vtypes.PluginPolicy) error {
 	s.logger.WithFields(logrus.Fields{
 		"policy_id":   policy.ID,
 		"plugin_type": policy.PluginType,
