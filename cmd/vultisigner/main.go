@@ -71,7 +71,6 @@ func main() {
 		sdClient,
 		cfg.Server.VaultsFilePath,
 		cfg.Server.Mode,
-		cfg.Server.JWTSecret,
 		cfg.Server.Plugin.Type,
 		cfg.Server.Plugin.Eth.Rpc,
 		cfg.Plugin.PluginConfigs,
