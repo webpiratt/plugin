@@ -1,21 +1,15 @@
 package payroll
 
 import (
-	"embed"
-
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
-	"github.com/vultisig/vultiserver-plugin/plugin"
 	"github.com/vultisig/vultiserver-plugin/storage"
 )
 
-//go:embed frontend
-var frontend embed.FS
-
 type PayrollPlugin struct {
 	db           storage.DatabaseStorage
-	nonceManager *plugin.NonceManager
+	nonceManager *NonceManager
 	rpcClient    *ethclient.Client
 	logger       logrus.FieldLogger
 }
@@ -38,13 +32,9 @@ func NewPayrollPlugin(db storage.DatabaseStorage, logger logrus.FieldLogger, raw
 	return &PayrollPlugin{
 		db:           db,
 		rpcClient:    rpcClient,
-		nonceManager: plugin.NewNonceManager(rpcClient),
+		nonceManager: NewNonceManager(rpcClient),
 		logger:       logger,
 	}, nil
-}
-
-func (p *PayrollPlugin) FrontendSchema() embed.FS {
-	return frontend
 }
 
 func (p *PayrollPlugin) GetNextNonce(address string) (uint64, error) {

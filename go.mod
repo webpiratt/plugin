@@ -20,7 +20,7 @@ require (
 	github.com/vultisig/commondata v0.0.0-20250430024109-a2492623ef05
 	github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f
 	github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74
-	github.com/vultisig/verifier v0.0.0-20250504234329-7a462fa6fc27
+	github.com/vultisig/verifier v0.0.0-20250505001859-2eb387bd493b
 	github.com/vultisig/vultiserver v0.0.0-20250421043311-443d711d503d
 	google.golang.org/protobuf v1.36.6
 )

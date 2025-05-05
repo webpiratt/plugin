@@ -16,7 +16,7 @@ import (
 	"github.com/vultisig/vultiserver-plugin/internal/sigutil"
 	"github.com/vultisig/vultiserver-plugin/internal/tasks"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
-	"github.com/vultisig/vultiserver-plugin/plugin"
+	"github.com/vultisig/verifier/plugin"
 	"github.com/vultisig/vultiserver-plugin/plugin/dca"
 	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
 	vtypes "github.com/vultisig/verifier/types"
@@ -28,7 +28,7 @@ import (
 func (s *Server) SignPluginMessages(c echo.Context) error {
 	s.logger.Debug("PLUGIN SERVER: SIGN MESSAGES")
 
-	var req types.PluginKeysignRequest
+	var req vtypes.PluginKeysignRequest
 	if err := c.Bind(&req); err != nil {
 		return fmt.Errorf("fail to parse request, err: %w", err)
 	}
@@ -56,7 +56,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 		return fmt.Errorf("failed to initialize plugin: %w", err)
 	}
 
-	if err := plg.ValidateProposedTransactions(policy, []types.PluginKeysignRequest{req}); err != nil {
+	if err := plg.ValidateProposedTransactions(policy, []vtypes.PluginKeysignRequest{req}); err != nil {
 		return fmt.Errorf("failed to validate transaction proposal: %w", err)
 	}
 

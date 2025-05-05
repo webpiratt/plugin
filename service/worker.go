@@ -23,13 +23,14 @@ import (
 	"github.com/vultisig/vultiserver-plugin/internal/syncer"
 	"github.com/vultisig/vultiserver-plugin/internal/tasks"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
-	"github.com/vultisig/vultiserver-plugin/plugin"
+	"github.com/vultisig/verifier/plugin"
 	"github.com/vultisig/vultiserver-plugin/plugin/dca"
 	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
 	"github.com/vultisig/vultiserver-plugin/relay"
 	"github.com/vultisig/vultiserver-plugin/storage"
 	"github.com/vultisig/vultiserver-plugin/storage/postgres"
 	"github.com/vultisig/vultiserver/contexthelper"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 type WorkerService struct {
@@ -417,7 +418,7 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 	return nil
 }
 
-func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequest types.PluginKeysignRequest, metadata map[string]interface{}, newTx types.TransactionHistory) error {
+func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequest vtypes.PluginKeysignRequest, metadata map[string]interface{}, newTx types.TransactionHistory) error {
 	signBytes, err := json.Marshal(signRequest)
 	if err != nil {
 		s.logger.Errorf("Failed to marshal sign request: %v", err)

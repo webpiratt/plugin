@@ -20,7 +20,6 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
 	vtypes "github.com/vultisig/verifier/types"
 )
 
@@ -30,8 +29,8 @@ const (
 	hexEncryptionKey = "hexencryptionkey"
 )
 
-func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types.PluginKeysignRequest, error) {
-	var txs []types.PluginKeysignRequest
+func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.PluginKeysignRequest, error) {
+	var txs []vtypes.PluginKeysignRequest
 	err := p.ValidatePluginPolicy(policy)
 	if err != nil {
 		return txs, fmt.Errorf("failed to validate plugin policy: %v", err)
@@ -54,14 +53,14 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types
 		)
 		fmt.Printf("Chain ID TEST 1: %s\n", payrollPolicy.ChainID[i])
 		if err != nil {
-			return []types.PluginKeysignRequest{}, fmt.Errorf("failed to generate transaction hash: %v", err)
+			return []vtypes.PluginKeysignRequest{}, fmt.Errorf("failed to generate transaction hash: %v", err)
 		}
 
 		chainIDInt, _ := strconv.ParseInt(payrollPolicy.ChainID[i], 10, 64)
 
 		// Create signing request
-		signRequest := types.PluginKeysignRequest{
-			KeysignRequest: types.KeysignRequest{
+		signRequest := vtypes.PluginKeysignRequest{
+			KeysignRequest: vtypes.KeysignRequest{
 				PublicKey:        policy.PublicKey,
 				Messages:         []string{hex.EncodeToString(txHash)},
 				SessionID:        uuid.New().String(),
@@ -81,14 +80,14 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types
 	txBytes, err := hex.DecodeString(signRequest.Transaction)
 	if err != nil {
 		p.logger.Errorf("Failed to decode transaction hex: %v", err)
-		return []types.PluginKeysignRequest{}, fmt.Errorf("failed to decode transaction hex: %w", err)
+		return []vtypes.PluginKeysignRequest{}, fmt.Errorf("failed to decode transaction hex: %w", err)
 	}
 	//unmarshal tx from sign req.transaction
 	tx := &gtypes.Transaction{}
 	err = tx.UnmarshalBinary(txBytes)
 	if err != nil {
 		p.logger.Errorf("Failed to unmarshal transaction: %v", err)
-		return []types.PluginKeysignRequest{}, fmt.Errorf("failed to unmarshal transaction: %d:", err)
+		return []vtypes.PluginKeysignRequest{}, fmt.Errorf("failed to unmarshal transaction: %w:", err)
 	}
 	fmt.Printf("Chain ID TEST 2: %s\n", tx.ChainId().String())
 	fmt.Printf("len TEST 2: %d\n", len(txs))
@@ -207,7 +206,7 @@ func (p *PayrollPlugin) generatePayrollTransaction(amountString, recipientString
 	return txHash, rawTx, nil
 }
 
-func (p *PayrollPlugin) SigningComplete(ctx context.Context, signature tss.KeysignResponse, signRequest types.PluginKeysignRequest, policy vtypes.PluginPolicy) error {
+func (p *PayrollPlugin) SigningComplete(ctx context.Context, signature tss.KeysignResponse, signRequest vtypes.PluginKeysignRequest, policy vtypes.PluginPolicy) error {
 	R, S, V, originalTx, chainID, _, err := p.convertData(signature, signRequest, policy)
 	if err != nil {
 		return fmt.Errorf("failed to convert R and S: %v", err)
@@ -250,7 +249,7 @@ func (p *PayrollPlugin) SigningComplete(ctx context.Context, signature tss.Keysi
 	return p.monitorTransaction(signedTx)
 }
 
-func (p *PayrollPlugin) convertData(signature tss.KeysignResponse, signRequest types.PluginKeysignRequest, policy vtypes.PluginPolicy) (R *big.Int, S *big.Int, V *big.Int, originalTx *gtypes.Transaction, chainID *big.Int, recoveryID int64, err error) {
+func (p *PayrollPlugin) convertData(signature tss.KeysignResponse, signRequest vtypes.PluginKeysignRequest, policy vtypes.PluginPolicy) (R *big.Int, S *big.Int, V *big.Int, originalTx *gtypes.Transaction, chainID *big.Int, recoveryID int64, err error) {
 	// convert R and S from hex strings to big.Int
 	R = new(big.Int)
 	R.SetString(signature.R, 16)
