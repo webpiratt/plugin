@@ -6,7 +6,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
+  "github.com/vultisig/vultiserver-plugin/internal/types"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 type DatabaseStorage interface {
@@ -15,11 +16,11 @@ type DatabaseStorage interface {
 	FindUserById(ctx context.Context, userId string) (*types.User, error)
 	FindUserByName(ctx context.Context, username string) (*types.UserWithPassword, error)
 
-	GetPluginPolicy(ctx context.Context, id string) (types.PluginPolicy, error)
-	GetAllPluginPolicies(ctx context.Context, publicKey string, pluginType string) ([]types.PluginPolicy, error)
+	GetPluginPolicy(ctx context.Context, id string) (vtypes.PluginPolicy, error)
+	GetAllPluginPolicies(ctx context.Context, publicKey string, pluginType string) ([]vtypes.PluginPolicy, error)
 	DeletePluginPolicyTx(ctx context.Context, dbTx pgx.Tx, id string) error
-	InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy types.PluginPolicy) (*types.PluginPolicy, error)
-	UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy types.PluginPolicy) (*types.PluginPolicy, error)
+	InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
+	UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
 
 	FindPricingById(ctx context.Context, id string) (*types.Pricing, error)
 	CreatePricing(ctx context.Context, pricingDto types.PricingCreateDto) (*types.Pricing, error)

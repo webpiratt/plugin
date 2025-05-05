@@ -15,6 +15,7 @@ import (
 	"github.com/vultisig/vultiserver-plugin/internal/tasks"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
 	"github.com/vultisig/vultiserver-plugin/storage"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 const (
@@ -167,7 +168,7 @@ func (s *SchedulerService) checkAndEnqueueTasks() error {
 	return nil
 }
 
-func (s *SchedulerService) CreateTimeTrigger(ctx context.Context, policy types.PluginPolicy, dbTx pgx.Tx) error {
+func (s *SchedulerService) CreateTimeTrigger(ctx context.Context, policy vtypes.PluginPolicy, dbTx pgx.Tx) error {
 	if s.db == nil {
 		return fmt.Errorf("database backend is nil")
 	}
@@ -180,7 +181,7 @@ func (s *SchedulerService) CreateTimeTrigger(ctx context.Context, policy types.P
 	return s.db.CreateTimeTriggerTx(ctx, dbTx, *trigger)
 }
 
-func (s *SchedulerService) GetTriggerFromPolicy(policy types.PluginPolicy) (*types.TimeTrigger, error) {
+func (s *SchedulerService) GetTriggerFromPolicy(policy vtypes.PluginPolicy) (*types.TimeTrigger, error) {
 	var policySchedule struct {
 		Schedule struct {
 			Frequency string     `json:"frequency"`

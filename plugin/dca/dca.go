@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 const (
@@ -98,7 +99,7 @@ func (p *DCAPlugin) SigningComplete(
 	ctx context.Context,
 	signature tss.KeysignResponse,
 	signRequest types.PluginKeysignRequest,
-	policy types.PluginPolicy,
+	policy vtypes.PluginPolicy,
 ) error {
 	var dcaPolicy DCAPolicy
 	if err := json.Unmarshal(policy.Policy, &dcaPolicy); err != nil {
@@ -141,7 +142,7 @@ func (p *DCAPlugin) SigningComplete(
 	return nil
 }
 
-func (p *DCAPlugin) ValidatePluginPolicy(policyDoc types.PluginPolicy) error {
+func (p *DCAPlugin) ValidatePluginPolicy(policyDoc vtypes.PluginPolicy) error {
 	if policyDoc.PluginType != pluginType {
 		return fmt.Errorf("policy does not match plugin type, expected: %s, got: %s", pluginType, policyDoc.PluginType)
 	}
@@ -297,7 +298,7 @@ func validateInterval(intervalStr string, frequency string) error {
 	return nil
 }
 
-func (p *DCAPlugin) ProposeTransactions(policy types.PluginPolicy) ([]types.PluginKeysignRequest, error) {
+func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types.PluginKeysignRequest, error) {
 	p.logger.Info("DCA: PROPOSE TRANSACTIONS")
 
 	var txs []types.PluginKeysignRequest
@@ -380,7 +381,7 @@ func (p *DCAPlugin) ProposeTransactions(policy types.PluginPolicy) ([]types.Plug
 	return txs, nil
 }
 
-func (p *DCAPlugin) ValidateProposedTransactions(policy types.PluginPolicy, txs []types.PluginKeysignRequest) error {
+func (p *DCAPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs []types.PluginKeysignRequest) error {
 	p.logger.Info("DCA: VALIDATE TRANSACTION PROPOSAL")
 
 	if len(txs) == 0 {
@@ -782,7 +783,7 @@ func (p *DCAPlugin) calculateSwapAmountPerOrder(totalAmount, totalOrders *big.In
 	return swapAmount
 }
 
-func (p *DCAPlugin) completePolicy(ctx context.Context, policy types.PluginPolicy) error {
+func (p *DCAPlugin) completePolicy(ctx context.Context, policy vtypes.PluginPolicy) error {
 	p.logger.WithFields(logrus.Fields{
 		"policy_id": policy.ID,
 	}).Info("DCA: All orders completed, no transactions to propose")

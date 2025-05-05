@@ -10,14 +10,15 @@ import (
 	"github.com/vultisig/vultiserver-plugin/internal/syncer"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
 	"github.com/vultisig/vultiserver-plugin/storage"
+	vtypes "github.com/vultisig/verifier/types"
 )
 
 type Policy interface {
-	CreatePolicyWithSync(ctx context.Context, policy types.PluginPolicy) (*types.PluginPolicy, error)
-	UpdatePolicyWithSync(ctx context.Context, policy types.PluginPolicy) (*types.PluginPolicy, error)
+	CreatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
+	UpdatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
 	DeletePolicyWithSync(ctx context.Context, policyID, signature string) error
-	GetPluginPolicies(ctx context.Context, pluginType, publicKey string) ([]types.PluginPolicy, error)
-	GetPluginPolicy(ctx context.Context, policyID string) (types.PluginPolicy, error)
+	GetPluginPolicies(ctx context.Context, pluginType, publicKey string) ([]vtypes.PluginPolicy, error)
+	GetPluginPolicy(ctx context.Context, policyID string) (vtypes.PluginPolicy, error)
 	GetPluginPolicyTransactionHistory(ctx context.Context, policyID string) ([]types.TransactionHistory, error)
 }
 
@@ -40,7 +41,7 @@ func NewPolicyService(db storage.DatabaseStorage, syncer syncer.PolicySyncer, sc
 	}, nil
 }
 
-func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy types.PluginPolicy) (*types.PluginPolicy, error) {
+func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
 	// Start transaction
 	tx, err := s.db.Pool().Begin(ctx)
 	if err != nil {
@@ -75,7 +76,7 @@ func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy types.P
 	return newPolicy, nil
 }
 
-func (s *PolicyService) UpdatePolicyWithSync(ctx context.Context, policy types.PluginPolicy) (*types.PluginPolicy, error) {
+func (s *PolicyService) UpdatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
 	// start transaction
 	tx, err := s.db.Pool().Begin(ctx)
 	if err != nil {
@@ -139,7 +140,7 @@ func (s *PolicyService) DeletePolicyWithSync(ctx context.Context, policyID, sign
 	return nil
 }
 
-func (s *PolicyService) GetPluginPolicies(ctx context.Context, pluginType, publicKey string) ([]types.PluginPolicy, error) {
+func (s *PolicyService) GetPluginPolicies(ctx context.Context, pluginType, publicKey string) ([]vtypes.PluginPolicy, error) {
 	policies, err := s.db.GetAllPluginPolicies(ctx, pluginType, publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get policies: %w", err)
@@ -147,10 +148,10 @@ func (s *PolicyService) GetPluginPolicies(ctx context.Context, pluginType, publi
 	return policies, nil
 }
 
-func (s *PolicyService) GetPluginPolicy(ctx context.Context, policyID string) (types.PluginPolicy, error) {
+func (s *PolicyService) GetPluginPolicy(ctx context.Context, policyID string) (vtypes.PluginPolicy, error) {
 	policy, err := s.db.GetPluginPolicy(ctx, policyID)
 	if err != nil {
-		return types.PluginPolicy{}, fmt.Errorf("failed to get policy: %w", err)
+		return vtypes.PluginPolicy{}, fmt.Errorf("failed to get policy: %w", err)
 	}
 	return policy, nil
 }
