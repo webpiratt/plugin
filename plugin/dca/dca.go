@@ -2,7 +2,6 @@ package dca
 
 import (
 	"context"
-	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -98,7 +97,7 @@ func NewDCAPlugin(db storage.DatabaseStorage, logger *logrus.Logger, rawConfig m
 func (p *DCAPlugin) SigningComplete(
 	ctx context.Context,
 	signature tss.KeysignResponse,
-	signRequest types.PluginKeysignRequest,
+	signRequest vtypes.PluginKeysignRequest,
 	policy vtypes.PluginPolicy,
 ) error {
 	var dcaPolicy DCAPolicy
@@ -298,10 +297,10 @@ func validateInterval(intervalStr string, frequency string) error {
 	return nil
 }
 
-func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types.PluginKeysignRequest, error) {
+func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.PluginKeysignRequest, error) {
 	p.logger.Info("DCA: PROPOSE TRANSACTIONS")
 
-	var txs []types.PluginKeysignRequest
+	var txs []vtypes.PluginKeysignRequest
 
 	// validate policy
 	err := p.ValidatePluginPolicy(policy)
@@ -359,8 +358,8 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types.Plu
 	}
 
 	for _, data := range rawTxsData {
-		signRequest := types.PluginKeysignRequest{
-			KeysignRequest: types.KeysignRequest{
+		signRequest := vtypes.PluginKeysignRequest{
+			KeysignRequest: vtypes.KeysignRequest{
 				PublicKey:        policy.PublicKey,
 				Messages:         []string{hex.EncodeToString(data.TxHash)},
 				SessionID:        uuid.New().String(),
@@ -381,7 +380,7 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]types.Plu
 	return txs, nil
 }
 
-func (p *DCAPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs []types.PluginKeysignRequest) error {
+func (p *DCAPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs []vtypes.PluginKeysignRequest) error {
 	p.logger.Info("DCA: VALIDATE TRANSACTION PROPOSAL")
 
 	if len(txs) == 0 {
@@ -444,7 +443,7 @@ func (p *DCAPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs
 	return nil
 }
 
-func (p *DCAPlugin) validateTransaction(keysignRequest types.PluginKeysignRequest, completedSwaps int64, policyTotalAmount, policyTotalOrders, policyChainID *big.Int, sourceAddrPolicy, destAddrPolicy, signerAddress *gcommon.Address) error {
+func (p *DCAPlugin) validateTransaction(keysignRequest vtypes.PluginKeysignRequest, completedSwaps int64, policyTotalAmount, policyTotalOrders, policyChainID *big.Int, sourceAddrPolicy, destAddrPolicy, signerAddress *gcommon.Address) error {
 	// Parse the transaction
 	var tx *gtypes.Transaction
 	txBytes, err := hex.DecodeString(keysignRequest.Transaction)
@@ -680,10 +679,6 @@ func (p *DCAPlugin) getApproveABI() (abi.ABI, error) {
 	]`
 
 	return abi.JSON(strings.NewReader(approveABI))
-}
-
-func (p *DCAPlugin) FrontendSchema() embed.FS {
-	return embed.FS{}
 }
 
 type RawTxData struct {

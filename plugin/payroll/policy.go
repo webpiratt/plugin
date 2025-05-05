@@ -12,7 +12,6 @@ import (
 	gtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/sirupsen/logrus"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
 	vtypes "github.com/vultisig/verifier/types"
 )
 
@@ -37,7 +36,7 @@ type Schedule struct {
 	EndTime   string `json:"end_time,omitempty"`
 }
 
-func (p *PayrollPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs []types.PluginKeysignRequest) error {
+func (p *PayrollPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs []vtypes.PluginKeysignRequest) error {
 	err := p.ValidatePluginPolicy(policy)
 	if err != nil {
 		return fmt.Errorf("failed to validate plugin policy: %v", err)
