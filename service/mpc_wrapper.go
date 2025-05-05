@@ -17,7 +17,6 @@ type MPCKeygenWrapper interface {
 	KeygenSessionMessageReceiver(session Handle, message []byte, index int) (string, error)
 	KeygenSessionFinish(session Handle) (Handle, error)
 	KeygenSessionFree(session Handle) error
-	MigrateSessionFromSetup(setup []byte, id []byte, publicKey []byte, rootChainCode []byte, secretCoefficient []byte) (Handle, error)
 }
 type MPCKeysignWrapper interface {
 	SignSetupMsgNew(keyID []byte, chainPath []byte, messageHash []byte, ids []byte) ([]byte, error)
@@ -175,14 +174,6 @@ func (w *MPCWrapperImp) KeygenSessionFree(h Handle) error {
 	return session.DklsKeygenSessionFree(session.Handle(h))
 }
 
-func (w *MPCWrapperImp) MigrateSessionFromSetup(setup []byte, id []byte, publicKey []byte, rootChainCode []byte, secretCoefficient []byte) (Handle, error) {
-	if w.isEdDSA {
-		h, err := eddsaSession.SchnorrKeyMigrateSessionFromSetup(setup, id, publicKey, rootChainCode, secretCoefficient)
-		return Handle(h), err
-	}
-	h, err := session.DklsKeyMigrateSessionFromSetup(setup, id, publicKey, rootChainCode, secretCoefficient)
-	return Handle(h), err
-}
 func (w *MPCWrapperImp) SignSetupMsgNew(keyID []byte, chainPath []byte, messageHash []byte, ids []byte) ([]byte, error) {
 	if w.isEdDSA {
 		return eddsaSession.SchnorrSignSetupMsgNew(keyID, chainPath, messageHash, ids)
