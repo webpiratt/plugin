@@ -87,7 +87,7 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 	err = tx.UnmarshalBinary(txBytes)
 	if err != nil {
 		p.logger.Errorf("Failed to unmarshal transaction: %v", err)
-		return []vtypes.PluginKeysignRequest{}, fmt.Errorf("failed to unmarshal transaction: %d:", err)
+		return []vtypes.PluginKeysignRequest{}, fmt.Errorf("failed to unmarshal transaction: %w:", err)
 	}
 	fmt.Printf("Chain ID TEST 2: %s\n", tx.ChainId().String())
 	fmt.Printf("len TEST 2: %d\n", len(txs))
