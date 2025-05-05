@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
 	vtypes "github.com/vultisig/verifier/types"
+	vcommon "github.com/vultisig/verifier/common"
 )
 
 const (
@@ -248,10 +249,6 @@ func (p *DCAPlugin) ValidatePluginPolicy(policyDoc vtypes.PluginPolicy) error {
 		return fmt.Errorf("chain id is required")
 	}
 
-	if policyDoc.DerivePath != common.DerivePathMap[dcaPolicy.ChainID] {
-		return fmt.Errorf("policy does not match derive path, expected: %s, got: %s", common.DerivePathMap[dcaPolicy.ChainID], policyDoc.DerivePath)
-	}
-
 	if err := validateInterval(dcaPolicy.Schedule.Interval, dcaPolicy.Schedule.Frequency); err != nil {
 		return err
 	}
@@ -341,8 +338,10 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.Pl
 	swapAmount := p.calculateSwapAmountPerOrder(totalAmount, totalOrders, completedSwaps)
 	p.logger.Info("DCA: SWAP AMOUNT: ", swapAmount.String())
 
+	chain := vcommon.Ethereum
+
 	// build transactions
-	signerAddress, err := common.DeriveAddress(policy.PublicKey, policy.ChainCodeHex, policy.DerivePath)
+	signerAddress, err := common.DeriveAddress(policy.PublicKey, policy.ChainCodeHex, chain.GetDerivePath())
 	if err != nil {
 		return txs, fmt.Errorf("fail to derive address: %w", err)
 	}
@@ -364,7 +363,7 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.Pl
 				Messages:         []string{hex.EncodeToString(data.TxHash)},
 				SessionID:        uuid.New().String(),
 				HexEncryptionKey: hexEncryptionKey,
-				DerivePath:       policy.DerivePath,
+				DerivePath:       chain.GetDerivePath(),
 				IsECDSA:          policy.IsEcdsa,
 				VaultPassword:    vaultPassword,
 				Parties:          []string{common.PluginPartyID, common.VerifierPartyID},
@@ -415,7 +414,9 @@ func (p *DCAPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs
 		return fmt.Errorf("invalid total orders")
 	}
 
-	signerAddress, err := common.DeriveAddress(policy.PublicKey, policy.ChainCodeHex, policy.DerivePath)
+	chain := vcommon.Ethereum
+
+	signerAddress, err := common.DeriveAddress(policy.PublicKey, policy.ChainCodeHex, chain.GetDerivePath())
 	if err != nil {
 		return fmt.Errorf("failed to derive address: %w", err)
 	}

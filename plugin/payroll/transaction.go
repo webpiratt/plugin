@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
 	vtypes "github.com/vultisig/verifier/types"
+	vcommon "github.com/vultisig/verifier/common"
 )
 
 // TODO: remove once the plugin installation is implemented
@@ -41,6 +42,8 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 		return txs, fmt.Errorf("fail to unmarshal payroll policy, err: %w", err)
 	}
 
+	chain := vcommon.Ethereum
+
 	for i, recipient := range payrollPolicy.Recipients {
 		txHash, rawTx, err := p.generatePayrollTransaction(
 			recipient.Amount,
@@ -49,7 +52,7 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 			payrollPolicy.TokenID[i],
 			policy.PublicKey,
 			policy.ChainCodeHex,
-			policy.DerivePath,
+			chain.GetDerivePath(),
 		)
 		fmt.Printf("Chain ID TEST 1: %s\n", payrollPolicy.ChainID[i])
 		if err != nil {
@@ -58,6 +61,8 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 
 		chainIDInt, _ := strconv.ParseInt(payrollPolicy.ChainID[i], 10, 64)
 
+		chain := vcommon.Ethereum
+
 		// Create signing request
 		signRequest := vtypes.PluginKeysignRequest{
 			KeysignRequest: vtypes.KeysignRequest{
@@ -65,7 +70,7 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 				Messages:         []string{hex.EncodeToString(txHash)},
 				SessionID:        uuid.New().String(),
 				HexEncryptionKey: hexEncryptionKey,
-				DerivePath:       policy.DerivePath,
+				DerivePath:       chain.GetDerivePath(),
 				IsECDSA:          IsECDSA(chainIDInt),
 				VaultPassword:    vaultPassword,
 			},

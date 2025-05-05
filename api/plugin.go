@@ -485,7 +485,7 @@ func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) 
 		return false
 	}
 
-	isVerified, err := sigutil.VerifySignature(policy.PublicKey, policy.ChainCodeHex, policy.DerivePath, msgBytes, signatureBytes)
+	isVerified, err := sigutil.VerifySignature(policy.PublicKey, policy.ChainCodeHex, msgBytes, signatureBytes)
 	if err != nil {
 		s.logger.Error(fmt.Errorf("failed to verify signature: %w", err))
 		return false
