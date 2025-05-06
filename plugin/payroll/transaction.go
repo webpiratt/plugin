@@ -61,8 +61,6 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 
 		chainIDInt, _ := strconv.ParseInt(payrollPolicy.ChainID[i], 10, 64)
 
-		chain := vcommon.Ethereum
-
 		// Create signing request
 		signRequest := vtypes.PluginKeysignRequest{
 			KeysignRequest: vtypes.KeysignRequest{
