@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 
 	"github.com/eager7/dogd/btcec"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -14,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/vultisig/mobile-tss-lib/tss"
+	"github.com/vultisig/verifier/address"
+	vcommon "github.com/vultisig/verifier/common"
 )
 
 func SignLegacyTx(keysignResponse tss.KeysignResponse, txHash string, rawTx string, chainID *big.Int) (*types.Transaction, *common.Address, error) {
@@ -69,15 +70,15 @@ func SignLegacyTx(keysignResponse tss.KeysignResponse, txHash string, rawTx stri
 	return signedTx, &sender, nil
 }
 
-func VerifySignature(vaultPublicKey string, chainCodeHex string, derivePath string, messageHex []byte, signature []byte) (bool, error) {
+func VerifySignature(vaultPublicKey string, chainCodeHex string, messageHex []byte, signature []byte) (bool, error) {
 	msgHash := crypto.Keccak256([]byte(fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(messageHex), messageHex)))
 
-	derivedPubKeyHex, err := tss.GetDerivedPubKey(strings.TrimPrefix(vaultPublicKey, "0x"), chainCodeHex, derivePath, false)
+	_, publicKeyHex, _, err := address.GetAddress(vaultPublicKey, chainCodeHex, vcommon.Ethereum)
 	if err != nil {
 		return false, err
 	}
 
-	publicKeyBytes, err := hex.DecodeString(derivedPubKeyHex)
+	publicKeyBytes, err := hex.DecodeString(publicKeyHex)
 	if err != nil {
 		return false, err
 	}

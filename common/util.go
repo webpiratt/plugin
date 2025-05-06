@@ -34,12 +34,6 @@ const (
 	vaultBackupSuffix = ".bak.vult"
 )
 
-var (
-	DerivePathMap = map[string]string{
-		"1": "m/44'/60'/0'/0/0", // ethereum
-	}
-)
-
 func CompressData(data []byte) ([]byte, error) {
 	var compressedData bytes.Buffer
 	// Create a new XZ writer.
