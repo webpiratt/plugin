@@ -18,19 +18,19 @@ import (
 	vaultType "github.com/vultisig/commondata/go/vultisig/vault/v1"
 	"github.com/vultisig/mobile-tss-lib/tss"
 
+	"github.com/vultisig/verifier/plugin"
+	vtypes "github.com/vultisig/verifier/types"
+	"github.com/vultisig/vultiserver/contexthelper"
+
 	"github.com/vultisig/vultiserver-plugin/common"
 	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/internal/syncer"
 	"github.com/vultisig/vultiserver-plugin/internal/tasks"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
-	"github.com/vultisig/verifier/plugin"
 	"github.com/vultisig/vultiserver-plugin/plugin/dca"
 	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
 	"github.com/vultisig/vultiserver-plugin/relay"
 	"github.com/vultisig/vultiserver-plugin/storage"
 	"github.com/vultisig/vultiserver-plugin/storage/postgres"
-	"github.com/vultisig/vultiserver/contexthelper"
-	vtypes "github.com/vultisig/verifier/types"
 )
 
 type WorkerService struct {
@@ -44,11 +44,10 @@ type WorkerService struct {
 	inspector    *asynq.Inspector
 	plugin       plugin.Plugin
 	db           storage.DatabaseStorage
-	syncer       syncer.PolicySyncer
 }
 
 // NewWorker creates a new worker service
-func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client, sdClient *statsd.Client, syncer syncer.PolicySyncer, blockStorage *storage.BlockStorage, inspector *asynq.Inspector) (*WorkerService, error) {
+func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client, sdClient *statsd.Client, blockStorage *storage.BlockStorage, inspector *asynq.Inspector) (*WorkerService, error) {
 	logger := logrus.WithField("service", "worker").Logger
 
 	redis, err := storage.NewRedisStorage(cfg)
@@ -61,16 +60,16 @@ func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client,
 		return nil, fmt.Errorf("fail to connect to database: %w", err)
 	}
 
-	var plugin plugin.Plugin
+	var p plugin.Plugin
 	if cfg.Server.Mode == "plugin" {
 		switch cfg.Server.Plugin.Type {
 		case "payroll":
-			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, cfg.Plugin.PluginConfigs["payroll"])
+			p, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, cfg.Plugin.PluginConfigs["payroll"])
 			if err != nil {
 				return nil, fmt.Errorf("fail to initialize payroll plugin: %w", err)
 			}
 		case "dca":
-			plugin, err = dca.NewDCAPlugin(db, logger, cfg.Plugin.PluginConfigs["dca"])
+			p, err = dca.NewDCAPlugin(db, logger, cfg.Plugin.PluginConfigs["dca"])
 			if err != nil {
 				return nil, fmt.Errorf("fail to initialize DCA plugin: %w", err)
 			}
@@ -87,9 +86,8 @@ func NewWorker(cfg config.Config, verifierPort int64, queueClient *asynq.Client,
 		queueClient:  queueClient,
 		sdClient:     sdClient,
 		inspector:    inspector,
-		plugin:       plugin,
+		plugin:       p,
 		logger:       logger,
-		syncer:       syncer,
 		verifierPort: verifierPort,
 	}, nil
 }
@@ -365,7 +363,7 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 
 		// wait for result with timeout
 		result, err := s.waitForTaskResult(ti.ID, 120*time.Second) // adjust timeout as needed (each policy provider should be able to set it, but there should be an incentive to not retry too much)
-		if err != nil {                                            //do we consider that the signature is always valid if err = nil?
+		if err != nil {                                            // do we consider that the signature is always valid if err = nil?
 			metadata["error"] = err.Error()
 			metadata["task_id"] = ti.ID
 			newTx.Status = types.StatusSigningFailed
@@ -417,7 +415,11 @@ func (s *WorkerService) HandlePluginTransaction(ctx context.Context, t *asynq.Ta
 
 	return nil
 }
-
+func (s *WorkerService) closer(closer io.Closer) {
+	if err := closer.Close(); err != nil {
+		s.logger.Errorf("Failed to close: %v", err)
+	}
+}
 func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequest vtypes.PluginKeysignRequest, metadata map[string]interface{}, newTx types.TransactionHistory) error {
 	signBytes, err := json.Marshal(signRequest)
 	if err != nil {
@@ -439,7 +441,7 @@ func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequ
 		}
 		return err
 	}
-	defer signResp.Body.Close()
+	defer s.closer(signResp.Body)
 
 	respBody, err := io.ReadAll(signResp.Body)
 	if err != nil {
@@ -465,13 +467,17 @@ func (s *WorkerService) upsertTransaction(ctx context.Context, tx *types.Transac
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer dbTx.Rollback(ctx)
+	defer func() {
+		if err := dbTx.Rollback(ctx); err != nil {
+			s.logger.Errorf("failed to rollback transaction: %v", err)
+		}
+	}()
 
 	txID, err := s.db.CreateTransactionHistoryTx(ctx, dbTx, *tx)
 	if err != nil {
 		s.logger.Errorf("Failed to create (or update) transaction history tx: %v", err)
-			return fmt.Errorf("failed to create transaction history: %w", err)
-		}
+		return fmt.Errorf("failed to create transaction history: %w", err)
+	}
 	tx.ID = txID
 
 	if err = s.db.UpdateTransactionStatusTx(ctx, dbTx, tx.ID, tx.Status, tx.Metadata); err != nil {
