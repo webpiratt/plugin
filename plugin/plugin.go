@@ -5,8 +5,9 @@ import (
 	"embed"
 
 	"github.com/vultisig/mobile-tss-lib/tss"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
 	vtypes "github.com/vultisig/verifier/types"
+
+	"github.com/vultisig/plugin/internal/types"
 )
 
 type Plugin interface {

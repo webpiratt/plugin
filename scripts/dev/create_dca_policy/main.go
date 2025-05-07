@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/plugin/dca"
 	vtypes "github.com/vultisig/verifier/types"
+
+	"github.com/vultisig/plugin/config"
+	"github.com/vultisig/plugin/plugin/dca"
 )
 
 var vaultName string

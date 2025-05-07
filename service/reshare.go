@@ -18,8 +18,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/vultisig/vultiserver-plugin/common"
-	"github.com/vultisig/vultiserver-plugin/relay"
+	"github.com/vultisig/plugin/common"
+	"github.com/vultisig/plugin/relay"
 )
 
 func (s *WorkerService) Reshare(vault *vaultType.Vault,
@@ -185,7 +185,7 @@ func (s *WorkerService) SaveVaultAndScheduleEmail(vault *vaultType.Vault,
 		}
 		return fmt.Errorf("fail to write file, err: %w", err)
 	}
-	
+
 	return nil
 }
 func getOldParties(newParties []string, oldSignerCommittee []string) []string {

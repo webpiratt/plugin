@@ -8,10 +8,10 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
-
-	"github.com/vultisig/vultiserver-plugin/internal/types"
-	"github.com/vultisig/vultiserver-plugin/relay"
 	"github.com/vultisig/vultiserver/contexthelper"
+
+	"github.com/vultisig/plugin/internal/types"
+	"github.com/vultisig/plugin/relay"
 )
 
 func (s *WorkerService) HandleKeyGenerationDKLS(ctx context.Context, t *asynq.Task) error {
