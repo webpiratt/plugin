@@ -8,7 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/internal/syncer"
 	"github.com/vultisig/vultiserver-plugin/internal/tasks"
 	"github.com/vultisig/vultiserver-plugin/service"
 	"github.com/vultisig/vultiserver-plugin/storage"
@@ -39,12 +38,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	syncerService := syncer.NewPolicySyncer(logger.WithField("service", "syncer").Logger, verifierConfig.Server.Host, verifierConfig.Server.Port)
 
 	client := asynq.NewClient(redisOptions)
 	inspector := asynq.NewInspector(redisOptions)
 
-	workerService, err := service.NewWorker(*cfg, verifierConfig.Server.Port, client, sdClient, syncerService, blockStorage, inspector)
+	workerService, err := service.NewWorker(*cfg, verifierConfig.Server.Port, client, sdClient, blockStorage, inspector)
 	if err != nil {
 		panic(err)
 	}

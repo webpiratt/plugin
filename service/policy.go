@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
+	vtypes "github.com/vultisig/verifier/types"
+
 	"github.com/vultisig/vultiserver-plugin/internal/scheduler"
-	"github.com/vultisig/vultiserver-plugin/internal/syncer"
 	"github.com/vultisig/vultiserver-plugin/internal/types"
 	"github.com/vultisig/vultiserver-plugin/storage"
-	vtypes "github.com/vultisig/verifier/types"
 )
 
 type Policy interface {
@@ -24,21 +25,25 @@ type Policy interface {
 
 type PolicyService struct {
 	db        storage.DatabaseStorage
-	syncer    syncer.PolicySyncer
 	scheduler *scheduler.SchedulerService
 	logger    *logrus.Logger
 }
 
-func NewPolicyService(db storage.DatabaseStorage, syncer syncer.PolicySyncer, scheduler *scheduler.SchedulerService, logger *logrus.Logger) (*PolicyService, error) {
+func NewPolicyService(db storage.DatabaseStorage, scheduler *scheduler.SchedulerService, logger *logrus.Logger) (*PolicyService, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database storage cannot be nil")
 	}
 	return &PolicyService{
 		db:        db,
-		syncer:    syncer,
 		scheduler: scheduler,
 		logger:    logger,
 	}, nil
+}
+
+func (s *PolicyService) handleRollback(ctx context.Context, tx pgx.Tx) {
+	if err := tx.Rollback(ctx); err != nil {
+		s.logger.WithError(err).Error("failed to rollback transaction")
+	}
 }
 
 func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
@@ -47,7 +52,7 @@ func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy vtypes.
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer s.handleRollback(ctx, tx)
 
 	// Insert policy
 	newPolicy, err := s.db.InsertPluginPolicyTx(ctx, tx, policy)
@@ -61,14 +66,6 @@ func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy vtypes.
 			return nil, fmt.Errorf("failed to create time trigger: %w", err)
 		}
 	}
-	// Sync if only syncer exists.
-	if s.syncer != nil {
-		err := s.syncer.CreatePolicySync(policy)
-		if err != nil {
-			return nil, fmt.Errorf("failed to sync create policy with verifier: %w", err)
-		}
-	}
-
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -82,7 +79,7 @@ func (s *PolicyService) UpdatePolicyWithSync(ctx context.Context, policy vtypes.
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer s.handleRollback(ctx, tx)
 
 	// Update policy with tx
 	updatedPolicy, err := s.db.UpdatePluginPolicyTx(ctx, tx, policy)
@@ -101,12 +98,6 @@ func (s *PolicyService) UpdatePolicyWithSync(ctx context.Context, policy vtypes.
 		}
 	}
 
-	if s.syncer != nil {
-		if err := s.syncer.UpdatePolicySync(policy); err != nil {
-			return nil, fmt.Errorf("failed to sync update policy with verifier: %w", err)
-		}
-	}
-
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -120,17 +111,11 @@ func (s *PolicyService) DeletePolicyWithSync(ctx context.Context, policyID, sign
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer s.handleRollback(ctx, tx)
 
 	err = s.db.DeletePluginPolicyTx(ctx, tx, policyID)
 	if err != nil {
 		return fmt.Errorf("failed to delete policy: %w", err)
-	}
-
-	if s.syncer != nil {
-		if err := s.syncer.DeletePolicySync(policyID, signature); err != nil {
-			return fmt.Errorf("failed to sync delete policy with verifier: %w", err)
-		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -1,30 +1,13 @@
 package api
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
-
-	"github.com/vultisig/vultiserver-plugin/common"
-	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/internal/scheduler"
-	"github.com/vultisig/vultiserver-plugin/internal/syncer"
-	"github.com/vultisig/vultiserver-plugin/internal/tasks"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
-	vv "github.com/vultisig/vultiserver-plugin/internal/vultisig_validator"
-	"github.com/vultisig/verifier/plugin"
-	"github.com/vultisig/vultiserver-plugin/plugin/dca"
-	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
-	"github.com/vultisig/vultiserver-plugin/service"
-	"github.com/vultisig/vultiserver-plugin/storage"
-	"github.com/vultisig/vultiserver-plugin/storage/postgres"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/go-playground/validator/v10"
@@ -35,6 +18,19 @@ import (
 	"github.com/sirupsen/logrus"
 	keygen "github.com/vultisig/commondata/go/vultisig/keygen/v1"
 	"github.com/vultisig/mobile-tss-lib/tss"
+	"github.com/vultisig/verifier/plugin"
+
+	"github.com/vultisig/vultiserver-plugin/common"
+	"github.com/vultisig/vultiserver-plugin/config"
+	"github.com/vultisig/vultiserver-plugin/internal/scheduler"
+	"github.com/vultisig/vultiserver-plugin/internal/tasks"
+	"github.com/vultisig/vultiserver-plugin/internal/types"
+	vv "github.com/vultisig/vultiserver-plugin/internal/vultisig_validator"
+	"github.com/vultisig/vultiserver-plugin/plugin/dca"
+	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
+	"github.com/vultisig/vultiserver-plugin/service"
+	"github.com/vultisig/vultiserver-plugin/storage"
+	"github.com/vultisig/vultiserver-plugin/storage/postgres"
 )
 
 type Server struct {
@@ -47,7 +43,6 @@ type Server struct {
 	sdClient      *statsd.Client
 	scheduler     *scheduler.SchedulerService
 	policyService service.Policy
-	syncer        syncer.PolicySyncer
 	plugin        plugin.Plugin
 	logger        *logrus.Logger
 	pluginConfigs map[string]map[string]interface{}
@@ -74,19 +69,18 @@ func NewServer(
 ) *Server {
 	logger.Infof("Server mode: %s, plugin type: %s", mode, pluginType)
 
-	var plugin plugin.Plugin
+	var p plugin.Plugin
 	var schedulerService *scheduler.SchedulerService
-	var syncerService syncer.PolicySyncer
 	var err error
 	if mode == "plugin" {
 		switch pluginType {
 		case "payroll":
-			plugin, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, pluginConfigs["payroll"])
+			p, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, pluginConfigs["payroll"])
 			if err != nil {
 				logger.Fatal("failed to initialize payroll plugin", err)
 			}
 		case "dca":
-			plugin, err = dca.NewDCAPlugin(db, logger, pluginConfigs["dca"])
+			p, err = dca.NewDCAPlugin(db, logger, pluginConfigs["dca"])
 			if err != nil {
 				logger.Fatal("fail to initialize DCA plugin: ", err)
 			}
@@ -104,10 +98,9 @@ func NewServer(
 
 		logger.Info("Creating Syncer")
 
-		syncerService = syncer.NewPolicySyncer(logger.WithField("service", "syncer").Logger, cfg.Server.Host, cfg.Server.Port)
 	}
 
-	policyService, err := service.NewPolicyService(db, syncerService, schedulerService, logger.WithField("service", "policy").Logger)
+	policyService, err := service.NewPolicyService(db, schedulerService, logger.WithField("service", "policy").Logger)
 	if err != nil {
 		logger.Fatalf("Failed to initialize policy service: %v", err)
 	}
@@ -121,11 +114,10 @@ func NewServer(
 		sdClient:      sdClient,
 		blockStorage:  blockStorage,
 		mode:          mode,
-		plugin:        plugin,
+		plugin:        p,
 		db:            db,
 		scheduler:     schedulerService,
 		logger:        logger,
-		syncer:        syncerService,
 		policyService: policyService,
 		pluginConfigs: pluginConfigs,
 	}
@@ -158,12 +150,11 @@ func (s *Server) StartServer() error {
 	grp.GET("/get/:publicKeyECDSA", s.GetVault)     // Get Vault Data
 	grp.GET("/exist/:publicKeyECDSA", s.ExistVault) // Check if Vault exists
 	//	grp.DELETE("/delete/:publicKeyECDSA", s.DeleteVault) // Delete Vault Data
-	grp.POST("/sign", s.SignMessages)       // Sign messages
-	grp.GET("/verify/:publicKeyECDSA/:code", s.VerifyCode)
+	grp.POST("/sign", s.SignMessages)                     // Sign messages
 	grp.GET("/sign/response/:taskId", s.GetKeysignResult) // Get keysign result
 
 	pluginGroup := e.Group("/plugin")
-	
+
 	// policy mode is always available since it is used by both verifier server and plugin server
 	pluginGroup.POST("/policy", s.CreatePluginPolicy)
 	pluginGroup.PUT("/policy", s.UpdatePluginPolicyById)
@@ -530,53 +521,6 @@ func (s *Server) ExistVault(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-
-func (s *Server) createVerificationCode(ctx context.Context, publicKeyECDSA string) (string, error) {
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-	code := rnd.Intn(9000) + 1000
-	verificationCode := strconv.Itoa(code)
-	key := fmt.Sprintf("verification_code_%s", publicKeyECDSA)
-	// verification code will be valid for 1 hour
-	if err := s.redis.Set(context.Background(), key, verificationCode, time.Hour); err != nil {
-		return "", fmt.Errorf("failed to set cache: %w", err)
-	}
-	return verificationCode, nil
-}
-
-// VerifyCode is a handler to verify the code
-func (s *Server) VerifyCode(c echo.Context) error {
-	publicKeyECDSA := c.Param("publicKeyECDSA")
-	if publicKeyECDSA == "" {
-		return fmt.Errorf("public key is required")
-	}
-	if !s.isValidHash(publicKeyECDSA) {
-		return c.NoContent(http.StatusBadRequest)
-	}
-	code := c.Param("code")
-	if code == "" {
-		s.logger.Errorln("code is required")
-		return c.NoContent(http.StatusBadRequest)
-	}
-	if err := s.sdClient.Count("vault.verify", 1, nil, 1); err != nil {
-		s.logger.Errorf("fail to count metric, err: %v", err)
-	}
-	key := fmt.Sprintf("verification_code_%s", publicKeyECDSA)
-	result, err := s.redis.Get(c.Request().Context(), key)
-	if err != nil {
-		s.logger.Errorf("fail to get code, err: %v", err)
-		return c.NoContent(http.StatusBadRequest)
-	}
-	if result != code {
-		return c.NoContent(http.StatusBadRequest)
-	}
-	// set the code to be expired in 5 minutes
-	if err := s.redis.Expire(c.Request().Context(), key, time.Minute*5); err != nil {
-		s.logger.Errorf("fail to expire code, err: %v", err)
-	}
-
-	return c.NoContent(http.StatusOK)
-}
-
 func (s *Server) CreateTransaction(c echo.Context) error {
 	var reqTx types.TransactionHistory
 	if err := c.Bind(&reqTx); err != nil {
@@ -621,4 +565,3 @@ func (s *Server) UpdateTransaction(c echo.Context) error {
 	}
 	return c.NoContent(http.StatusOK)
 }
-
