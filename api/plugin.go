@@ -11,18 +11,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/vultisig/vultiserver-plugin/common"
-	"github.com/vultisig/vultiserver-plugin/internal/sigutil"
-	"github.com/vultisig/vultiserver-plugin/internal/tasks"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
-	"github.com/vultisig/verifier/plugin"
-	"github.com/vultisig/vultiserver-plugin/plugin/dca"
-	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
-	vtypes "github.com/vultisig/verifier/types"
 	gtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
+	"github.com/vultisig/verifier/plugin"
+	vtypes "github.com/vultisig/verifier/types"
+
+	"github.com/vultisig/plugin/common"
+	"github.com/vultisig/plugin/internal/sigutil"
+	"github.com/vultisig/plugin/internal/tasks"
+	"github.com/vultisig/plugin/internal/types"
+	"github.com/vultisig/plugin/plugin/dca"
+	"github.com/vultisig/plugin/plugin/payroll"
 )
 
 func (s *Server) SignPluginMessages(c echo.Context) error {

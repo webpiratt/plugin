@@ -4,7 +4,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
-	"github.com/vultisig/vultiserver-plugin/storage"
+
+	"github.com/vultisig/plugin/storage"
 )
 
 type PayrollPlugin struct {

@@ -20,17 +20,17 @@ import (
 	"github.com/vultisig/mobile-tss-lib/tss"
 	"github.com/vultisig/verifier/plugin"
 
-	"github.com/vultisig/vultiserver-plugin/common"
-	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/internal/scheduler"
-	"github.com/vultisig/vultiserver-plugin/internal/tasks"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
-	vv "github.com/vultisig/vultiserver-plugin/internal/vultisig_validator"
-	"github.com/vultisig/vultiserver-plugin/plugin/dca"
-	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
-	"github.com/vultisig/vultiserver-plugin/service"
-	"github.com/vultisig/vultiserver-plugin/storage"
-	"github.com/vultisig/vultiserver-plugin/storage/postgres"
+	"github.com/vultisig/plugin/common"
+	"github.com/vultisig/plugin/config"
+	"github.com/vultisig/plugin/internal/scheduler"
+	"github.com/vultisig/plugin/internal/tasks"
+	"github.com/vultisig/plugin/internal/types"
+	vv "github.com/vultisig/plugin/internal/vultisig_validator"
+	"github.com/vultisig/plugin/plugin/dca"
+	"github.com/vultisig/plugin/plugin/payroll"
+	"github.com/vultisig/plugin/service"
+	"github.com/vultisig/plugin/storage"
+	"github.com/vultisig/plugin/storage/postgres"
 )
 
 type Server struct {

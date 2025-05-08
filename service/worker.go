@@ -22,15 +22,15 @@ import (
 	vtypes "github.com/vultisig/verifier/types"
 	"github.com/vultisig/vultiserver/contexthelper"
 
-	"github.com/vultisig/vultiserver-plugin/common"
-	"github.com/vultisig/vultiserver-plugin/config"
-	"github.com/vultisig/vultiserver-plugin/internal/tasks"
-	"github.com/vultisig/vultiserver-plugin/internal/types"
-	"github.com/vultisig/vultiserver-plugin/plugin/dca"
-	"github.com/vultisig/vultiserver-plugin/plugin/payroll"
-	"github.com/vultisig/vultiserver-plugin/relay"
-	"github.com/vultisig/vultiserver-plugin/storage"
-	"github.com/vultisig/vultiserver-plugin/storage/postgres"
+	"github.com/vultisig/plugin/common"
+	"github.com/vultisig/plugin/config"
+	"github.com/vultisig/plugin/internal/tasks"
+	"github.com/vultisig/plugin/internal/types"
+	"github.com/vultisig/plugin/plugin/dca"
+	"github.com/vultisig/plugin/plugin/payroll"
+	"github.com/vultisig/plugin/relay"
+	"github.com/vultisig/plugin/storage"
+	"github.com/vultisig/plugin/storage/postgres"
 )
 
 type WorkerService struct {

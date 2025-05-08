@@ -17,10 +17,10 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
-
-	"github.com/vultisig/vultiserver-plugin/internal/types"
-	"github.com/vultisig/vultiserver-plugin/relay"
 	vcommon "github.com/vultisig/vultiserver/common"
+
+	"github.com/vultisig/plugin/internal/types"
+	"github.com/vultisig/plugin/relay"
 )
 
 func (t *DKLSTssService) ProcessDKLSKeysign(req types.KeysignRequest) (map[string]tss.KeysignResponse, error) {
