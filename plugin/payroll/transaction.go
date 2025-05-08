@@ -60,8 +60,6 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 			return []vtypes.PluginKeysignRequest{}, fmt.Errorf("failed to generate transaction hash: %v", err)
 		}
 
-		chainIDInt, _ := strconv.ParseInt(payrollPolicy.ChainID[i], 10, 64)
-
 		// Create signing request
 		signRequest := vtypes.PluginKeysignRequest{
 			KeysignRequest: vtypes.KeysignRequest{
@@ -70,7 +68,7 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 				SessionID:        uuid.New().String(),
 				HexEncryptionKey: hexEncryptionKey,
 				DerivePath:       chain.GetDerivePath(),
-				IsECDSA:          IsECDSA(chainIDInt),
+				IsECDSA:          !chain.IsEdDSA(),
 				VaultPassword:    vaultPassword,
 			},
 			Transaction: hex.EncodeToString(rawTx),
