@@ -428,10 +428,6 @@ func (s *WorkerService) initiateTxSignWithVerifier(ctx context.Context, signRequ
 	}
 
 	verifierURL := s.cfg.Server.VerifierURL
-	if verifierURL == "" {
-		// Only append port for local development
-		verifierURL = fmt.Sprintf("http://localhost:%d", s.verifierPort)
-	}
 
 	signResp, err := http.Post(
 		fmt.Sprintf("%s/signFromPlugin", verifierURL),
