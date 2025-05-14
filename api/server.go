@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/sirupsen/logrus"
-	keygen "github.com/vultisig/commondata/go/vultisig/keygen/v1"
 	"github.com/vultisig/mobile-tss-lib/tss"
 	"github.com/vultisig/verifier/plugin"
 
@@ -95,8 +93,6 @@ func NewServer(
 		)
 		schedulerService.Start()
 		logger.Info("Scheduler service started")
-
-		logger.Info("Creating Syncer")
 
 	}
 
@@ -261,32 +257,6 @@ func (s *Server) ReshareVault(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// UploadVault is a handler that receives a vault file from integration.
-func (s *Server) UploadVault(c echo.Context) error {
-	bodyReader := http.MaxBytesReader(c.Response(), c.Request().Body, 2<<20) // 2M
-	content, err := io.ReadAll(bodyReader)
-	if err != nil {
-		return fmt.Errorf("fail to read body, err: %w", err)
-	}
-
-	passwd, err := s.extractXPassword(c)
-	if err != nil {
-		return fmt.Errorf("fail to extract password, err: %w", err)
-	}
-
-	vault, err := common.DecryptVaultFromBackup(passwd, content)
-	if err != nil {
-		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
-	}
-
-	filePathName := common.GetVaultBackupFilename(vault.PublicKeyEcdsa)
-	if err := s.blockStorage.UploadFile(content, filePathName); err != nil {
-		return fmt.Errorf("fail to upload file, err: %w", err)
-	}
-
-	return c.NoContent(http.StatusOK)
-}
-
 func (s *Server) extractXPassword(c echo.Context) (string, error) {
 	passwd := c.Request().Header.Get("x-password")
 	if passwd == "" {
@@ -370,7 +340,7 @@ func (s *Server) SignMessages(c echo.Context) error {
 		return wrappedErr
 	}
 
-	vault, err := common.DecryptVaultFromBackup(req.VaultPassword, content)
+	_, err = common.DecryptVaultFromBackup(req.VaultPassword, content)
 	if err != nil {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
@@ -378,14 +348,9 @@ func (s *Server) SignMessages(c echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("fail to marshal to json, err: %w", err)
 	}
-	var typeName = ""
-	if vault.LibType == keygen.LibType_LIB_TYPE_GG20 {
-		typeName = tasks.TypeKeySign
-	} else {
-		typeName = tasks.TypeKeySignDKLS
-	}
+
 	ti, err := s.client.EnqueueContext(c.Request().Context(),
-		asynq.NewTask(typeName, buf),
+		asynq.NewTask(tasks.TypeKeySignDKLS, buf),
 		asynq.MaxRetry(-1),
 		asynq.Timeout(2*time.Minute),
 		asynq.Retention(5*time.Minute),

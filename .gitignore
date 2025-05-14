@@ -11,3 +11,5 @@ config.yaml
 plugins-ui/node_modules/
 _tmp_
 localconfig*
+worker
+vultisigner

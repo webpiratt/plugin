@@ -20,15 +20,13 @@ func (p *PostgresBackend) GetPluginPolicy(ctx context.Context, id string) (vtype
 	var policyJSON []byte
 
 	query := `
-        SELECT id, public_key, is_ecdsa, chain_code_hex, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy 
+        SELECT id, public_key, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy 
         FROM plugin_policies 
         WHERE id = $1`
 
 	err := p.pool.QueryRow(ctx, query, id).Scan(
 		&policy.ID,
 		&policy.PublicKey,
-		&policy.IsEcdsa,
-		&policy.ChainCodeHex,
 		&policy.PluginID,
 		&policy.PluginVersion,
 		&policy.PolicyVersion,
@@ -52,7 +50,7 @@ func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey st
 	}
 
 	query := `
-  	SELECT id, public_key, is_ecdsa, chain_code_hex, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy 
+  	SELECT id, public_key,  plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy 
 		FROM plugin_policies
 		WHERE public_key = $1
 		AND plugin_type = $2`
@@ -68,8 +66,6 @@ func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey st
 		err := rows.Scan(
 			&policy.ID,
 			&policy.PublicKey,
-			&policy.IsEcdsa,
-			&policy.ChainCodeHex,
 			&policy.PluginID,
 			&policy.PluginVersion,
 			&policy.PolicyVersion,
@@ -95,17 +91,15 @@ func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 
 	query := `
   	INSERT INTO plugin_policies (
-      id, public_key, is_ecdsa, chain_code_hex, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
+      id, public_key, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING id, public_key, is_ecdsa, chain_code_hex, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
+    RETURNING id, public_key,  plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
 	`
 
 	var insertedPolicy vtypes.PluginPolicy
 	err = dbTx.QueryRow(ctx, query,
 		policy.ID,
 		policy.PublicKey,
-		policy.IsEcdsa,
-		policy.ChainCodeHex,
 		policy.PluginID,
 		policy.PluginVersion,
 		policy.PolicyVersion,
@@ -116,8 +110,6 @@ func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 	).Scan(
 		&insertedPolicy.ID,
 		&insertedPolicy.PublicKey,
-		&insertedPolicy.IsEcdsa,
-		&insertedPolicy.ChainCodeHex,
 		&insertedPolicy.PluginID,
 		&insertedPolicy.PluginVersion,
 		&insertedPolicy.PolicyVersion,
@@ -139,14 +131,13 @@ func (p *PostgresBackend) UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 		return nil, fmt.Errorf("failed to marshal policy: %w", err)
 	}
 
-	// TODO: update other fields
 	query := `
 		UPDATE plugin_policies 
-		SET public_key = $2, 
-				plugin_type = $3, 
-				signature = $4,
-				active = $5,
-				policy = $6
+		SET plugin_version = $2,
+		    policy_version = $3,
+			signature = $4,
+			active = $5,
+			policy = $6
 		WHERE id = $1
 		RETURNING id, public_key, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
 	`
@@ -154,8 +145,8 @@ func (p *PostgresBackend) UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 	var updatedPolicy vtypes.PluginPolicy
 	err = dbTx.QueryRow(ctx, query,
 		policy.ID,
-		policy.PublicKey,
-		policy.PluginType,
+		policy.PluginVersion,
+		policy.PolicyVersion,
 		policy.Signature,
 		policy.Active,
 		policyJSON,

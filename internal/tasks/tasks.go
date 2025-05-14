@@ -6,11 +6,8 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-const QUEUE_NAME = "vultisigner"
+const QUEUE_NAME = "plugin_queue"
 const (
-	TypeKeyGeneration     = "key:generation"
-	TypeKeySign           = "key:sign"
-	TypeReshare           = "key:reshare"
 	TypePluginTransaction = "plugin:transaction"
 	TypeKeyGenerationDKLS = "key:generationDKLS"
 	TypeKeySignDKLS       = "key:signDKLS"
