@@ -56,7 +56,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 	}
 
 	// Validate policy matches plugin
-	if policy.PluginID != req.PluginID {
+	if policy.PluginID.String() != req.PluginID {
 		return fmt.Errorf("policy plugin ID mismatch")
 	}
 
@@ -211,8 +211,8 @@ func (s *Server) CreatePluginPolicy(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, NewErrorResponse("failed to validate policy"))
 	}
 
-	if policy.ID == "" {
-		policy.ID = uuid.NewString()
+	if policy.ID.String() == "" {
+		policy.ID = uuid.New()
 	}
 
 	if !s.verifyPolicySignature(policy, false) {
@@ -375,7 +375,8 @@ func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) 
 		return false
 	}
 
-	isVerified, err := sigutil.VerifySignature(policy.PublicKey, policy.ChainCodeHex, msgBytes, signatureBytes)
+	//
+	isVerified, err := sigutil.VerifySignature(policy.PublicKey, "", msgBytes, signatureBytes)
 	if err != nil {
 		s.logger.WithError(err).Error("Failed to verify signature")
 		return false
@@ -384,9 +385,7 @@ func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) 
 }
 
 func policyToMessageHex(policy vtypes.PluginPolicy, isUpdate bool) (string, error) {
-	if !isUpdate {
-		policy.ID = ""
-	}
+
 	// signature is not part of the message that is signed
 	policy.Signature = ""
 

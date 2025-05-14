@@ -146,10 +146,6 @@ func (p *DCAPlugin) ValidatePluginPolicy(policyDoc vtypes.PluginPolicy) error {
 		return fmt.Errorf("policy does not match policy version, expected: %s, got: %s", policyVersion, policyDoc.PolicyVersion)
 	}
 
-	if policyDoc.ChainCodeHex == "" {
-		return fmt.Errorf("policy does not contain chain_code_hex")
-	}
-
 	if policyDoc.PublicKey == "" {
 		return fmt.Errorf("policy does not contain public_key")
 	}
@@ -158,8 +154,8 @@ func (p *DCAPlugin) ValidatePluginPolicy(policyDoc vtypes.PluginPolicy) error {
 	if err != nil {
 		return fmt.Errorf("invalid hex encoding: %w", err)
 	}
-
-	isValidPublicKey := common.CheckIfPublicKeyIsValid(pubKeyBytes, policyDoc.IsEcdsa)
+	// The public key used in plugin policy will always be the ECDSA public key
+	isValidPublicKey := common.CheckIfPublicKeyIsValid(pubKeyBytes, true)
 
 	if !isValidPublicKey {
 		return fmt.Errorf("invalid public_key")
@@ -332,7 +328,8 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.Pl
 	chain := vcommon.Ethereum
 
 	// build transactions
-	signerAddress, err := common.DeriveAddress(policy.PublicKey, policy.ChainCodeHex, chain.GetDerivePath())
+	// TODO: hex chain code can be retrieved from vault
+	signerAddress, err := common.DeriveAddress(policy.PublicKey, "", chain.GetDerivePath())
 	if err != nil {
 		return txs, fmt.Errorf("fail to derive address: %w", err)
 	}
@@ -355,13 +352,13 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.Pl
 				SessionID:        uuid.New().String(),
 				HexEncryptionKey: hexEncryptionKey,
 				DerivePath:       chain.GetDerivePath(),
-				IsECDSA:          policy.IsEcdsa,
+				IsECDSA:          true,
 				VaultPassword:    vaultPassword,
 				Parties:          []string{common.PluginPartyID, common.VerifierPartyID},
 			},
 			Transaction:     hex.EncodeToString(data.RlpTxBytes),
-			PluginID:        policy.PluginID,
-			PolicyID:        policy.ID,
+			PluginID:        policy.PluginID.String(),
+			PolicyID:        policy.ID.String(),
 			TransactionType: data.Type,
 		}
 		txs = append(txs, signRequest)
@@ -406,8 +403,8 @@ func (p *DCAPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy, txs
 	}
 
 	chain := vcommon.Ethereum
-
-	signerAddress, err := common.DeriveAddress(policy.PublicKey, policy.ChainCodeHex, chain.GetDerivePath())
+	// TODO: hexChainCode is stored with vault , so we need to get it from vault
+	signerAddress, err := common.DeriveAddress(policy.PublicKey, "", chain.GetDerivePath())
 	if err != nil {
 		return fmt.Errorf("failed to derive address: %w", err)
 	}
@@ -743,12 +740,8 @@ func (p *DCAPlugin) logTokenBalances(client *uniswap.Client, signerAddress *gcom
 	p.logger.Info("Output token balance: ", tokenOutBalance.String())
 }
 
-func (p *DCAPlugin) getCompletedSwapTransactionsCount(ctx context.Context, policyID string) (int64, error) {
-	policyUUID, err := uuid.Parse(policyID)
-	if err != nil {
-		return 0, fmt.Errorf("invalid policy_id: %s", policyID)
-	}
-	count, err := p.db.CountTransactions(ctx, policyUUID, types.StatusMined, "SWAP")
+func (p *DCAPlugin) getCompletedSwapTransactionsCount(ctx context.Context, policyID uuid.UUID) (int64, error) {
+	count, err := p.db.CountTransactions(ctx, policyID, types.StatusMined, "SWAP")
 	if err != nil {
 		return 0, err
 	}

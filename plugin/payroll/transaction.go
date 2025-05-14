@@ -52,7 +52,7 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 			payrollPolicy.ChainID[i],
 			payrollPolicy.TokenID[i],
 			policy.PublicKey,
-			policy.ChainCodeHex,
+			"",
 			chain.GetDerivePath(),
 		)
 		fmt.Printf("Chain ID TEST 1: %s\n", payrollPolicy.ChainID[i])
@@ -72,8 +72,8 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 				VaultPassword:    vaultPassword,
 			},
 			Transaction: hex.EncodeToString(rawTx),
-			PluginID:    policy.PluginID,
-			PolicyID:    policy.ID,
+			PluginID:    policy.PluginID.String(),
+			PolicyID:    policy.ID.String(),
 		}
 		txs = append(txs, signRequest)
 	}
