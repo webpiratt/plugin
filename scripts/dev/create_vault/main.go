@@ -12,12 +12,12 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/vultisig/verifier/vault"
+	"github.com/vultisig/vultiserver/relay"
 
 	"github.com/vultisig/plugin/common"
 	"github.com/vultisig/plugin/config"
 	"github.com/vultisig/plugin/internal/types"
-	"github.com/vultisig/plugin/relay"
-	"github.com/vultisig/plugin/service"
 )
 
 var vaultName string
@@ -99,7 +99,7 @@ func main() {
 
 	fmt.Println("Please watch the logs on the worker nodes and retrieve the ECDSA public key")
 
-	mpcWrapper := service.NewMPCWrapperImp(false)
+	mpcWrapper := vault.NewMPCWrapperImp(false)
 	partyBytes := make([]byte, 0)
 	for _, party := range createVaultRequest.Parties {
 		partyBytes = append(partyBytes, []byte(party)...)
@@ -114,7 +114,7 @@ func main() {
 
 	base64SetupMessage := base64.StdEncoding.EncodeToString(setupMessage)
 
-	relayClient := relay.NewRelayClient(serverConfig.Relay.Server)
+	relayClient := relay.NewRelayClient("https://api.vultisig.com/router")
 
 	encryptedSetupMessage, err := common.EncryptGCM(base64SetupMessage, createVaultRequest.HexEncryptionKey)
 	if err != nil {

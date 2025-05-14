@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
+	"github.com/vultisig/verifier/vault"
 )
 
 type Config struct {
@@ -41,19 +42,9 @@ type Config struct {
 		DB       int    `mapstructure:"db" json:"db,omitempty"`
 	} `mapstructure:"redis" json:"redis,omitempty"`
 
-	Relay struct {
-		Server string `mapstructure:"server" json:"server"`
-	} `mapstructure:"relay" json:"relay,omitempty"`
-
-	BlockStorage struct {
-		Host      string `mapstructure:"host" json:"host"`
-		Region    string `mapstructure:"region" json:"region"`
-		AccessKey string `mapstructure:"access_key" json:"access_key"`
-		SecretKey string `mapstructure:"secret" json:"secret"`
-		Bucket    string `mapstructure:"bucket" json:"bucket"`
-	} `mapstructure:"block_storage" json:"block_storage"`
-
-	Datadog struct {
+	BlockStorage       vault.BlockStorageConfig `mapstructure:"block_storage" json:"block_storage,omitempty"`
+	VaultServiceConfig vault.Config             `mapstructure:"vault_service" json:"vault_service,omitempty"`
+	Datadog            struct {
 		Host string `mapstructure:"host" json:"host,omitempty"`
 		Port string `mapstructure:"port" json:"port,omitempty"`
 	} `mapstructure:"datadog" json:"datadog"`
