@@ -145,11 +145,8 @@ func (s *Server) StartServer() error {
 	grp := e.Group("/vault")
 	grp.POST("/create", s.CreateVault)
 	grp.POST("/reshare", s.ReshareVault)
-	// grp.POST("/upload", s.UploadVault)
-	// grp.GET("/download/:publicKeyECDSA", s.DownloadVault)
-	grp.GET("/get/:publicKeyECDSA", s.GetVault)     // Get Vault Data
-	grp.GET("/exist/:publicKeyECDSA", s.ExistVault) // Check if Vault exists
-	//	grp.DELETE("/delete/:publicKeyECDSA", s.DeleteVault) // Delete Vault Data
+	grp.GET("/get/:publicKeyECDSA", s.GetVault)           // Get Vault Data
+	grp.GET("/exist/:publicKeyECDSA", s.ExistVault)       // Check if Vault exists
 	grp.POST("/sign", s.SignMessages)                     // Sign messages
 	grp.GET("/sign/response/:taskId", s.GetKeysignResult) // Get keysign result
 
@@ -165,7 +162,7 @@ func (s *Server) StartServer() error {
 }
 
 func (s *Server) Ping(c echo.Context) error {
-	return c.String(http.StatusOK, "Vultiserver is running")
+	return c.String(http.StatusOK, "Payroll & DCA Plugin server is running")
 }
 
 // GetDerivedPublicKey is a handler to get the derived public key
@@ -220,13 +217,8 @@ func (s *Server) CreateVault(c echo.Context) error {
 	if err := s.redis.Set(c.Request().Context(), req.SessionID, req.SessionID, 5*time.Minute); err != nil {
 		s.logger.Errorf("fail to set session, err: %v", err)
 	}
-	var typeName = ""
-	if req.LibType == types.GG20 {
-		typeName = tasks.TypeKeyGeneration
-	} else {
-		typeName = tasks.TypeKeyGenerationDKLS
-	}
-	_, err = s.client.Enqueue(asynq.NewTask(typeName, buf),
+
+	_, err = s.client.Enqueue(asynq.NewTask(tasks.TypeKeyGenerationDKLS, buf),
 		asynq.MaxRetry(-1),
 		asynq.Timeout(7*time.Minute),
 		asynq.Retention(10*time.Minute),
@@ -258,13 +250,7 @@ func (s *Server) ReshareVault(c echo.Context) error {
 	if err := s.redis.Set(c.Request().Context(), req.SessionID, req.SessionID, 5*time.Minute); err != nil {
 		s.logger.Errorf("fail to set session, err: %v", err)
 	}
-	var typeName = ""
-	if req.LibType == types.GG20 {
-		typeName = tasks.TypeReshare
-	} else {
-		typeName = tasks.TypeReshareDKLS
-	}
-	_, err = s.client.Enqueue(asynq.NewTask(typeName, buf),
+	_, err = s.client.Enqueue(asynq.NewTask(tasks.TypeReshareDKLS, buf),
 		asynq.MaxRetry(-1),
 		asynq.Timeout(7*time.Minute),
 		asynq.Retention(10*time.Minute),
@@ -299,36 +285,6 @@ func (s *Server) UploadVault(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
-}
-
-func (s *Server) DownloadVault(c echo.Context) error {
-	publicKeyECDSA := c.Param("publicKeyECDSA")
-	if publicKeyECDSA == "" {
-		return fmt.Errorf("public key is required")
-	}
-	if !s.isValidHash(publicKeyECDSA) {
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	passwd, err := s.extractXPassword(c)
-	if err != nil {
-		return fmt.Errorf("fail to extract password, err: %w", err)
-	}
-
-	filePathName := common.GetVaultBackupFilename(publicKeyECDSA)
-	content, err := s.blockStorage.GetFile(filePathName)
-	if err != nil {
-		wrappedErr := fmt.Errorf("fail to read file in DownloadVault, err: %w", err)
-		s.logger.Error(wrappedErr)
-		return wrappedErr
-	}
-
-	_, err = common.DecryptVaultFromBackup(passwd, content)
-	if err != nil {
-		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
-	}
-	return c.Blob(http.StatusOK, "application/octet-stream", content)
-
 }
 
 func (s *Server) extractXPassword(c echo.Context) (string, error) {
@@ -380,42 +336,6 @@ func (s *Server) GetVault(c echo.Context) error {
 		HexChainCode:   vault.HexChainCode,
 		LocalPartyId:   vault.LocalPartyId,
 	})
-}
-
-func (s *Server) DeleteVault(c echo.Context) error {
-	publicKeyECDSA := c.Param("publicKeyECDSA")
-	if publicKeyECDSA == "" {
-		return fmt.Errorf("public key is required")
-	}
-	if !s.isValidHash(publicKeyECDSA) {
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	passwd, err := s.extractXPassword(c)
-	if err != nil {
-		return fmt.Errorf("fail to extract password, err: %w", err)
-	}
-
-	filePathName := common.GetVaultBackupFilename(publicKeyECDSA)
-	content, err := s.blockStorage.GetFile(filePathName)
-	if err != nil {
-		wrappedErr := fmt.Errorf("fail to read file in DeleteVault, err: %w", err)
-		s.logger.Error(wrappedErr)
-		return wrappedErr
-	}
-
-	vault, err := common.DecryptVaultFromBackup(passwd, content)
-	if err != nil {
-		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
-	}
-	s.logger.Infof("removing vault file %s per request", vault.PublicKeyEcdsa)
-
-	err = s.blockStorage.DeleteFile(filePathName)
-	if err != nil {
-		return fmt.Errorf("fail to remove file, err: %w", err)
-	}
-
-	return c.NoContent(http.StatusOK)
 }
 
 // SignMessages is a handler to process Keysing request
