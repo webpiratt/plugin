@@ -9,6 +9,6 @@ ALTER TABLE plugin_policies DROP COLUMN chain_code_hex,
 ALTER TABLE plugin_policies
     ADD COLUMN is_ecdsa BOOLEAN DEFAULT TRUE;
 ALTER TABLE plugin_policies
-    ADD COLUMN chain_code_hex TEXT NOT NULL;
+    ADD COLUMN chain_code_hex TEXT NOT NULL DEFAULT '';
 
 -- +goose StatementEnd
