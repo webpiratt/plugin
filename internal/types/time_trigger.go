@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type TimeTriggerStatus string
 
@@ -10,7 +14,7 @@ const (
 )
 
 type TimeTrigger struct {
-	PolicyID       string            `json:"policy_id"`
+	PolicyID       uuid.UUID         `json:"policy_id"`
 	CronExpression string            `json:"cron_expression"`
 	StartTime      time.Time         `json:"start_time"`
 	EndTime        *time.Time        `json:"end_time"`

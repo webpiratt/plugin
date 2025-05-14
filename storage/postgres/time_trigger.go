@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/vultisig/plugin/internal/types"
@@ -35,7 +36,7 @@ func (p *PostgresBackend) CreateTimeTriggerTx(ctx context.Context, tx pgx.Tx, tr
 	return err
 }
 
-func (p *PostgresBackend) DeleteTimeTrigger(ctx context.Context, policyID string) error {
+func (p *PostgresBackend) DeleteTimeTrigger(ctx context.Context, policyID uuid.UUID) error {
 	if p.pool == nil {
 		return fmt.Errorf("database pool is nil")
 	}
@@ -94,7 +95,7 @@ func (p *PostgresBackend) GetPendingTimeTriggers(ctx context.Context) ([]types.T
 	return triggers, nil
 }
 
-func (p *PostgresBackend) UpdateTimeTriggerLastExecution(ctx context.Context, policyID string) error {
+func (p *PostgresBackend) UpdateTimeTriggerLastExecution(ctx context.Context, policyID uuid.UUID) error {
 	if p.pool == nil {
 		return fmt.Errorf("database pool is nil")
 	}
@@ -109,7 +110,7 @@ func (p *PostgresBackend) UpdateTimeTriggerLastExecution(ctx context.Context, po
 	return err
 }
 
-func (p *PostgresBackend) UpdateTimeTriggerTx(ctx context.Context, policyID string, trigger types.TimeTrigger, tx pgx.Tx) error {
+func (p *PostgresBackend) UpdateTimeTriggerTx(ctx context.Context, policyID uuid.UUID, trigger types.TimeTrigger, tx pgx.Tx) error {
 	if p.pool == nil {
 		return fmt.Errorf("database pool is nil")
 	}
@@ -132,7 +133,7 @@ func (p *PostgresBackend) UpdateTimeTriggerTx(ctx context.Context, policyID stri
 	return err
 }
 
-func (p *PostgresBackend) GetTriggerStatus(ctx context.Context, policyID string) (types.TimeTriggerStatus, error) {
+func (p *PostgresBackend) GetTriggerStatus(ctx context.Context, policyID uuid.UUID) (types.TimeTriggerStatus, error) {
 	if p.pool == nil {
 		return "", fmt.Errorf("database pool is nil")
 	}
@@ -155,7 +156,7 @@ func (p *PostgresBackend) GetTriggerStatus(ctx context.Context, policyID string)
 	return status, nil
 }
 
-func (p *PostgresBackend) UpdateTriggerStatus(ctx context.Context, policyID string, status types.TimeTriggerStatus) error {
+func (p *PostgresBackend) UpdateTriggerStatus(ctx context.Context, policyID uuid.UUID, status types.TimeTriggerStatus) error {
 	if p.pool == nil {
 		return fmt.Errorf("database pool is nil")
 	}

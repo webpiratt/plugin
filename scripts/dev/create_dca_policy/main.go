@@ -75,11 +75,11 @@ func main() {
 	frequency, _ := reader.ReadString('\n')
 	frequency = frequency[:len(frequency)-1]
 
-	policyId := uuid.New().String()
+	policyId := uuid.New()
 	policy := vtypes.PluginPolicy{
 		ID:            policyId,
 		PublicKey:     key,
-		PluginID:      "dca",
+		PluginID:      uuid.New(), // update it to DCA plugin ID
 		PluginVersion: "1.0.0",
 		PolicyVersion: "1.0.0",
 		PluginType:    "dca",

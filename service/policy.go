@@ -15,13 +15,15 @@ import (
 )
 
 type Policy interface {
-	CreatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
-	UpdatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
-	DeletePolicyWithSync(ctx context.Context, policyID, signature string) error
+	CreatePolicy(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
+	UpdatePolicy(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error)
+	DeletePolicy(ctx context.Context, policyID, signature string) error
 	GetPluginPolicies(ctx context.Context, pluginType, publicKey string) ([]vtypes.PluginPolicy, error)
 	GetPluginPolicy(ctx context.Context, policyID string) (vtypes.PluginPolicy, error)
 	GetPluginPolicyTransactionHistory(ctx context.Context, policyID string) ([]types.TransactionHistory, error)
 }
+
+var _ Policy = (*PolicyService)(nil)
 
 type PolicyService struct {
 	db        storage.DatabaseStorage
@@ -46,7 +48,7 @@ func (s *PolicyService) handleRollback(ctx context.Context, tx pgx.Tx) {
 	}
 }
 
-func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
+func (s *PolicyService) CreatePolicy(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
 	// Start transaction
 	tx, err := s.db.Pool().Begin(ctx)
 	if err != nil {
@@ -73,7 +75,7 @@ func (s *PolicyService) CreatePolicyWithSync(ctx context.Context, policy vtypes.
 	return newPolicy, nil
 }
 
-func (s *PolicyService) UpdatePolicyWithSync(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
+func (s *PolicyService) UpdatePolicy(ctx context.Context, policy vtypes.PluginPolicy) (*vtypes.PluginPolicy, error) {
 	// start transaction
 	tx, err := s.db.Pool().Begin(ctx)
 	if err != nil {
@@ -105,7 +107,7 @@ func (s *PolicyService) UpdatePolicyWithSync(ctx context.Context, policy vtypes.
 	return updatedPolicy, nil
 }
 
-func (s *PolicyService) DeletePolicyWithSync(ctx context.Context, policyID, signature string) error {
+func (s *PolicyService) DeletePolicy(ctx context.Context, policyID, signature string) error {
 
 	tx, err := s.db.Pool().Begin(ctx)
 	if err != nil {

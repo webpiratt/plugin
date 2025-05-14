@@ -29,12 +29,12 @@ type DatabaseStorage interface {
 
 	CreateTimeTriggerTx(ctx context.Context, dbTx pgx.Tx, trigger types.TimeTrigger) error
 	GetPendingTimeTriggers(ctx context.Context) ([]types.TimeTrigger, error)
-	UpdateTimeTriggerLastExecution(ctx context.Context, policyID string) error
-	UpdateTimeTriggerTx(ctx context.Context, policyID string, trigger types.TimeTrigger, dbTx pgx.Tx) error
+	UpdateTimeTriggerLastExecution(ctx context.Context, policyID uuid.UUID) error
+	UpdateTimeTriggerTx(ctx context.Context, policyID uuid.UUID, trigger types.TimeTrigger, dbTx pgx.Tx) error
 
-	DeleteTimeTrigger(ctx context.Context, policyID string) error
-	UpdateTriggerStatus(ctx context.Context, policyID string, status types.TimeTriggerStatus) error
-	GetTriggerStatus(ctx context.Context, policyID string) (types.TimeTriggerStatus, error)
+	DeleteTimeTrigger(ctx context.Context, policyID uuid.UUID) error
+	UpdateTriggerStatus(ctx context.Context, policyID uuid.UUID, status types.TimeTriggerStatus) error
+	GetTriggerStatus(ctx context.Context, policyID uuid.UUID) (types.TimeTriggerStatus, error)
 
 	CountTransactions(ctx context.Context, policyID uuid.UUID, status types.TransactionStatus, txType string) (int64, error)
 	CreateTransactionHistoryTx(ctx context.Context, dbTx pgx.Tx, tx types.TransactionHistory) (uuid.UUID, error)
