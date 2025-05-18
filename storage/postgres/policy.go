@@ -20,7 +20,7 @@ func (p *PostgresBackend) GetPluginPolicy(ctx context.Context, id string) (vtype
 	var policyJSON []byte
 
 	query := `
-        SELECT id, public_key, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy 
+        SELECT id, public_key, plugin_id, plugin_version, policy_version, signature, active, policy, recipe
         FROM plugin_policies 
         WHERE id = $1`
 
@@ -30,10 +30,10 @@ func (p *PostgresBackend) GetPluginPolicy(ctx context.Context, id string) (vtype
 		&policy.PluginID,
 		&policy.PluginVersion,
 		&policy.PolicyVersion,
-		&policy.PluginType,
 		&policy.Signature,
 		&policy.Active,
 		&policyJSON,
+		&policy.Recipe,
 	)
 
 	if err != nil {
@@ -50,7 +50,7 @@ func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey st
 	}
 
 	query := `
-  	SELECT id, public_key,  plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy 
+  	SELECT id, public_key,  plugin_id, plugin_version, policy_version, signature, active, policy, recipe
 		FROM plugin_policies
 		WHERE public_key = $1
 		AND plugin_type = $2`
@@ -69,10 +69,10 @@ func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey st
 			&policy.PluginID,
 			&policy.PluginVersion,
 			&policy.PolicyVersion,
-			&policy.PluginType,
 			&policy.Signature,
 			&policy.Active,
 			&policy.Policy,
+			&policy.Recipe,
 		)
 		if err != nil {
 			return nil, err
@@ -91,9 +91,9 @@ func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 
 	query := `
   	INSERT INTO plugin_policies (
-      id, public_key, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING id, public_key,  plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
+      id, public_key, plugin_id, plugin_version, policy_version, signature, active, policy, recipe
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    RETURNING id, public_key,  plugin_id, plugin_version, policy_version, signature, active, policy, recipe
 	`
 
 	var insertedPolicy vtypes.PluginPolicy
@@ -103,20 +103,20 @@ func (p *PostgresBackend) InsertPluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 		policy.PluginID,
 		policy.PluginVersion,
 		policy.PolicyVersion,
-		policy.PluginType,
 		policy.Signature,
 		policy.Active,
 		policyJSON,
+		policy.Recipe,
 	).Scan(
 		&insertedPolicy.ID,
 		&insertedPolicy.PublicKey,
 		&insertedPolicy.PluginID,
 		&insertedPolicy.PluginVersion,
 		&insertedPolicy.PolicyVersion,
-		&insertedPolicy.PluginType,
 		&insertedPolicy.Signature,
 		&insertedPolicy.Active,
 		&insertedPolicy.Policy,
+		&insertedPolicy.Recipe,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert policy: %w", err)
@@ -137,9 +137,10 @@ func (p *PostgresBackend) UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 		    policy_version = $3,
 			signature = $4,
 			active = $5,
-			policy = $6
+			policy = $6,
+			recipe = $7
 		WHERE id = $1
-		RETURNING id, public_key, plugin_id, plugin_version, policy_version, plugin_type, signature, active, policy
+		RETURNING id, public_key, plugin_id, plugin_version, policy_version, signature, active, policy, recipe
 	`
 
 	var updatedPolicy vtypes.PluginPolicy
@@ -150,16 +151,17 @@ func (p *PostgresBackend) UpdatePluginPolicyTx(ctx context.Context, dbTx pgx.Tx,
 		policy.Signature,
 		policy.Active,
 		policyJSON,
+		policy.Recipe,
 	).Scan(
 		&updatedPolicy.ID,
 		&updatedPolicy.PublicKey,
 		&updatedPolicy.PluginID,
 		&updatedPolicy.PluginVersion,
 		&updatedPolicy.PolicyVersion,
-		&updatedPolicy.PluginType,
 		&updatedPolicy.Signature,
 		&updatedPolicy.Active,
 		&updatedPolicy.Policy,
+		&updatedPolicy.Recipe,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {

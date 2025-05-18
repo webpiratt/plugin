@@ -19,7 +19,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/vultisig/commondata v0.0.0-20250430024109-a2492623ef05
 	github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74
-	github.com/vultisig/verifier v0.0.0-20250513124642-41d01a15b222
+	github.com/vultisig/verifier v0.0.0-20250518231539-6ca51be2f52b
 	github.com/vultisig/vultiserver v0.0.0-20250421043311-443d711d503d
 	google.golang.org/protobuf v1.36.6
 )
@@ -160,7 +160,6 @@ require (
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/otiai10/primes v0.4.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
