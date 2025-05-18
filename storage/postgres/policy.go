@@ -44,7 +44,7 @@ func (p *PostgresBackend) GetPluginPolicy(ctx context.Context, id string) (vtype
 	return policy, nil
 }
 
-func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey string, pluginType string) ([]vtypes.PluginPolicy, error) {
+func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey string, pluginID vtypes.PluginID) ([]vtypes.PluginPolicy, error) {
 	if p.pool == nil {
 		return []vtypes.PluginPolicy{}, fmt.Errorf("database pool is nil")
 	}
@@ -53,9 +53,9 @@ func (p *PostgresBackend) GetAllPluginPolicies(ctx context.Context, publicKey st
   	SELECT id, public_key,  plugin_id, plugin_version, policy_version, signature, active, policy, recipe
 		FROM plugin_policies
 		WHERE public_key = $1
-		AND plugin_type = $2`
+		AND plugin_id = $2`
 
-	rows, err := p.pool.Query(ctx, query, publicKey, pluginType)
+	rows, err := p.pool.Query(ctx, query, publicKey, pluginID)
 	if err != nil {
 		return nil, err
 	}

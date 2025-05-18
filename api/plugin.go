@@ -171,17 +171,17 @@ func (s *Server) GetAllPluginPolicies(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: public_key"))
 	}
 
-	pluginType := c.Request().Header.Get("plugin_type")
-	if pluginType == "" {
-		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_type"))
+	pluginID := c.Request().Header.Get("plugin_id")
+	if pluginID == "" {
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_id"))
 	}
 
-	policies, err := s.policyService.GetPluginPolicies(c.Request().Context(), publicKey, pluginType)
+	policies, err := s.policyService.GetPluginPolicies(c.Request().Context(), vtypes.PluginID(pluginID), publicKey)
 	if err != nil {
 		s.logger.WithError(err).WithFields(
 			logrus.Fields{
-				"public_key":  publicKey,
-				"plugin_type": pluginType,
+				"public_key": publicKey,
+				"plugin_id":  pluginID,
 			}).Error("failed to get policies")
 		return c.JSON(http.StatusInternalServerError, NewErrorResponse("failed to get policies"))
 	}
