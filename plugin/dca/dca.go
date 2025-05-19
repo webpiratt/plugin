@@ -134,8 +134,8 @@ func (p *DCAPlugin) SigningComplete(
 }
 
 func (p *DCAPlugin) ValidatePluginPolicy(policyDoc vtypes.PluginPolicy) error {
-	if policyDoc.PluginType != pluginType {
-		return fmt.Errorf("policy does not match plugin type, expected: %s, got: %s", pluginType, policyDoc.PluginType)
+	if policyDoc.PluginID != vtypes.PluginVultisigDCA_0000 {
+		return fmt.Errorf("policy does not match plugin type, expected: %s, got: %s", pluginType, policyDoc.PluginID)
 	}
 
 	if policyDoc.PluginVersion != pluginVersion {

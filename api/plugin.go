@@ -62,7 +62,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 
 	// We re-init plugin as verification server doesn't have plugin defined
 	var plg plugin.Plugin
-	plg, err = s.initializePlugin(policy.PluginType)
+	plg, err = s.initializePlugin(policy.PluginID)
 	if err != nil {
 		return fmt.Errorf("failed to initialize plugin: %w", err)
 	}
@@ -171,17 +171,17 @@ func (s *Server) GetAllPluginPolicies(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: public_key"))
 	}
 
-	pluginType := c.Request().Header.Get("plugin_type")
-	if pluginType == "" {
-		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_type"))
+	pluginID := c.Request().Header.Get("plugin_id")
+	if pluginID == "" {
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_id"))
 	}
 
-	policies, err := s.policyService.GetPluginPolicies(c.Request().Context(), publicKey, pluginType)
+	policies, err := s.policyService.GetPluginPolicies(c.Request().Context(), vtypes.PluginID(pluginID), publicKey)
 	if err != nil {
 		s.logger.WithError(err).WithFields(
 			logrus.Fields{
-				"public_key":  publicKey,
-				"plugin_type": pluginType,
+				"public_key": publicKey,
+				"plugin_id":  pluginID,
 			}).Error("failed to get policies")
 		return c.JSON(http.StatusInternalServerError, NewErrorResponse("failed to get policies"))
 	}
@@ -198,10 +198,10 @@ func (s *Server) CreatePluginPolicy(c echo.Context) error {
 	// We re-init plugin as verification server doesn't have plugin defined
 
 	var plg plugin.Plugin
-	plg, err := s.initializePlugin(policy.PluginType)
+	plg, err := s.initializePlugin(policy.PluginID)
 	if err != nil {
 		s.logger.WithError(err).
-			WithField("plugin_type", policy.PluginType).
+			WithField("plugin_id", policy.PluginID).
 			Error("Failed to initialize plugin")
 		return c.JSON(http.StatusBadRequest, NewErrorResponse("failed to initialize plugin"))
 	}
@@ -237,17 +237,17 @@ func (s *Server) UpdatePluginPolicyById(c echo.Context) error {
 
 	// We re-init plugin as verification server doesn't have plugin defined
 	var plg plugin.Plugin
-	plg, err := s.initializePlugin(policy.PluginType)
+	plg, err := s.initializePlugin(policy.PluginID)
 	if err != nil {
 		s.logger.WithError(err).
-			WithField("plugin_type", policy.PluginType).
+			WithField("plugin_id", policy.PluginID).
 			Error("Failed to initialize plugin")
 		return c.JSON(http.StatusBadRequest, NewErrorResponse("failed to initialize plugin"))
 	}
 
 	if err := plg.ValidatePluginPolicy(policy); err != nil {
 		s.logger.WithError(err).
-			WithField("plugin_type", policy.PluginType).
+			WithField("plugin_id", policy.PluginID).
 			WithField("policy_id", policy.ID).
 			Error("Failed to validate plugin policy")
 		return c.JSON(http.StatusBadRequest, NewErrorResponse("failed to validate policy"))
@@ -307,13 +307,13 @@ func (s *Server) DeletePluginPolicyById(c echo.Context) error {
 }
 
 func (s *Server) GetPolicySchema(c echo.Context) error {
-	pluginType := c.Request().Header.Get("plugin_type") // this is a unique identifier; this won't be needed once the DCA and Payroll are separate services
-	if pluginType == "" {
-		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_type"))
+	pluginID := c.Request().Header.Get("plugin_id") // this is a unique identifier; this won't be needed once the DCA and Payroll are separate services
+	if pluginID == "" {
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_id"))
 	}
 
 	// TODO: need to deal with both DCA and Payroll plugins
-	keyPath := filepath.Join("plugin", pluginType, "dcaPluginUiSchema.json")
+	keyPath := filepath.Join("plugin", pluginID, "dcaPluginUiSchema.json")
 	jsonData, err := os.ReadFile(keyPath)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, NewErrorResponse("failed to read plugin schema"))
@@ -346,14 +346,14 @@ func (s *Server) GetPluginPolicyTransactionHistory(c echo.Context) error {
 	return c.JSON(http.StatusOK, policyHistory)
 }
 
-func (s *Server) initializePlugin(pluginType string) (plugin.Plugin, error) {
-	switch pluginType {
-	case "payroll":
+func (s *Server) initializePlugin(pluginID vtypes.PluginID) (plugin.Plugin, error) {
+	switch pluginID {
+	case vtypes.PluginVultisigPayroll_0000:
 		return payroll.NewPayrollPlugin(s.db, s.logger, s.cfg.Server.BaseConfigPath)
-	case "dca":
+	case vtypes.PluginVultisigDCA_0000:
 		return dca.NewDCAPlugin(s.db, s.logger, s.cfg.Server.BaseConfigPath)
 	default:
-		return nil, fmt.Errorf("unknown plugin type: %s", pluginType)
+		return nil, fmt.Errorf("unknown plugin type: %s", pluginID)
 	}
 }
 func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) bool {

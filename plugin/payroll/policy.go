@@ -108,8 +108,8 @@ func (p *PayrollPlugin) ValidateProposedTransactions(policy vtypes.PluginPolicy,
 }
 
 func (p *PayrollPlugin) ValidatePluginPolicy(policyDoc vtypes.PluginPolicy) error {
-	if policyDoc.PluginType != PLUGIN_TYPE {
-		return fmt.Errorf("policy does not match plugin type, expected: %s, got: %s", PLUGIN_TYPE, policyDoc.PluginType)
+	if policyDoc.PluginID != vtypes.PluginVultisigPayroll_0000 {
+		return fmt.Errorf("policy does not match plugin type, expected: %s, got: %s", vtypes.PluginVultisigPayroll_0000, policyDoc.PluginID)
 	}
 
 	var payrollPolicy PayrollPolicy
