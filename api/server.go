@@ -62,7 +62,6 @@ func NewServer(
 	vaultFilePath string,
 	mode string,
 	pluginType string,
-	rpcURL string,
 	pluginConfigs map[string]map[string]interface{},
 	logger *logrus.Logger,
 ) *Server {
