@@ -27,7 +27,7 @@ type PayrollRecipient struct {
 	Amount  string `json:"amount"`
 }
 
-// This is duplicated between DCA and Payroll to avoid a 
+// This is duplicated between DCA and Payroll to avoid a
 // circular top-level dependency on the types package
 type Schedule struct {
 	Frequency string `json:"frequency"`

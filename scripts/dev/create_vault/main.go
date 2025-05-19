@@ -12,12 +12,12 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	vtypes "github.com/vultisig/verifier/types"
 	"github.com/vultisig/verifier/vault"
 	"github.com/vultisig/vultiserver/relay"
 
 	"github.com/vultisig/plugin/common"
 	"github.com/vultisig/plugin/config"
-	"github.com/vultisig/plugin/internal/types"
 )
 
 var vaultName string
@@ -56,15 +56,13 @@ func main() {
 		panic(err)
 	}
 
-	createVaultRequest := &types.VaultCreateRequest{
-		Name:               vaultName,
-		SessionID:          uuid.New().String(),
-		HexEncryptionKey:   "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-		HexChainCode:       "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-		LocalPartyId:       common.PluginPartyID,
-		EncryptionPassword: "your-secure-password",
-		Email:              "example@example.com",
-		LibType:            types.DKLS,
+	createVaultRequest := &vtypes.VaultCreateRequest{
+		Name:             vaultName,
+		SessionID:        uuid.New().String(),
+		HexEncryptionKey: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+		HexChainCode:     "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+		LocalPartyId:     common.PluginPartyID,
+		Email:            "example@example.com",
 	}
 
 	serverHost := fmt.Sprintf("http://%s:%d", serverConfig.Server.Host, serverConfig.Server.Port)

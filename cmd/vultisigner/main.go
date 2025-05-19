@@ -72,7 +72,6 @@ func main() {
 		cfg.Server.VaultsFilePath,
 		cfg.Server.Mode,
 		cfg.Server.Plugin.Type,
-		cfg.Server.Plugin.Eth.Rpc,
 		cfg.Plugin.PluginConfigs,
 		logger,
 	)
