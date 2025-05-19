@@ -57,13 +57,12 @@ func main() {
 	}
 
 	createVaultRequest := &vtypes.VaultCreateRequest{
-		Name:               vaultName,
-		SessionID:          uuid.New().String(),
-		HexEncryptionKey:   "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-		HexChainCode:       "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-		LocalPartyId:       common.PluginPartyID,
-		EncryptionPassword: "your-secure-password",
-		Email:              "example@example.com",
+		Name:             vaultName,
+		SessionID:        uuid.New().String(),
+		HexEncryptionKey: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+		HexChainCode:     "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+		LocalPartyId:     common.PluginPartyID,
+		Email:            "example@example.com",
 	}
 
 	serverHost := fmt.Sprintf("http://%s:%d", serverConfig.Server.Host, serverConfig.Server.Port)

@@ -311,7 +311,6 @@ func (s *Server) GetVault(c echo.Context) error {
 // SignMessages is a handler to process Keysing request
 func (s *Server) SignMessages(c echo.Context) error {
 	s.logger.Debug("VERIFIER SERVER: SIGN MESSAGES")
-
 	var req vtypes.KeysignRequest
 	if err := c.Bind(&req); err != nil {
 		return fmt.Errorf("fail to parse request, err: %w", err)
