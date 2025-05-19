@@ -8,17 +8,14 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
-	"math"
 	"strings"
 
 	"github.com/eager7/dogd/btcec"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ulikunitz/xz"
-	v1 "github.com/vultisig/commondata/go/vultisig/keygen/v1"
 	vaultType "github.com/vultisig/commondata/go/vultisig/vault/v1"
 	"github.com/vultisig/mobile-tss-lib/tss"
 	"google.golang.org/protobuf/proto"
@@ -31,7 +28,7 @@ const (
 )
 
 const (
-	vaultBackupSuffix = ".bak.vult"
+	vaultBackupSuffix = ".bak"
 )
 
 func CompressData(data []byte) ([]byte, error) {
@@ -166,43 +163,6 @@ func DecryptVaultFromBackup(password string, vaultBackupRaw []byte) (*vaultType.
 	}
 
 	return &vault, nil
-}
-
-// IsSubset checks if the first slice is a subset of the second slice
-func IsSubset(subset, set []string) bool {
-	setMap := make(map[string]bool)
-	for _, v := range set {
-		setMap[v] = true
-	}
-	for _, v := range subset {
-		if !setMap[v] {
-			return false
-		}
-	}
-	return true
-}
-
-func GetVaultName(vault *vaultType.Vault) string {
-	lastFourCharOfPubKey := vault.PublicKeyEcdsa[len(vault.PublicKeyEcdsa)-4:]
-	partIndex := 0
-	for idx, item := range vault.Signers {
-		if item == vault.LocalPartyId {
-			partIndex = idx
-			break
-		}
-	}
-	if vault.LibType == v1.LibType_LIB_TYPE_GG20 {
-		return fmt.Sprintf("%s-%s-part%dof%d-Vultiserver.vult", vault.Name, lastFourCharOfPubKey, partIndex+1, len(vault.Signers))
-	}
-	return fmt.Sprintf("%s-%s-share%dof%d-Vultiserver.vult", vault.Name, lastFourCharOfPubKey, partIndex+1, len(vault.Signers))
-}
-
-func GetThreshold(value int) (int, error) {
-	if value < 2 {
-		return 0, errors.New("invalid input")
-	}
-	threshold := int(math.Ceil(float64(value)*2.0/3.0)) - 1
-	return threshold, nil
 }
 
 func EncryptGCM(plainText string, hexEncryptKey string) (string, error) {

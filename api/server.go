@@ -18,6 +18,7 @@ import (
 	"github.com/vultisig/mobile-tss-lib/tss"
 	"github.com/vultisig/verifier/plugin"
 	vtypes "github.com/vultisig/verifier/types"
+	"github.com/vultisig/verifier/vault"
 
 	"github.com/vultisig/plugin/common"
 	"github.com/vultisig/plugin/config"
@@ -36,7 +37,7 @@ type Server struct {
 	cfg           *config.Config
 	db            storage.DatabaseStorage
 	redis         *storage.RedisStorage
-	blockStorage  *storage.BlockStorage
+	vaultStorage  vault.Storage
 	client        *asynq.Client
 	inspector     *asynq.Inspector
 	sdClient      *statsd.Client
@@ -44,7 +45,6 @@ type Server struct {
 	policyService service.Policy
 	plugin        plugin.Plugin
 	logger        *logrus.Logger
-	pluginConfigs map[string]map[string]interface{}
 	vaultFilePath string
 	mode          string
 }
@@ -54,7 +54,7 @@ func NewServer(
 	cfg *config.Config,
 	db *postgres.PostgresBackend,
 	redis *storage.RedisStorage,
-	blockStorage *storage.BlockStorage,
+	vaultStorage vault.Storage,
 	redisOpts asynq.RedisClientOpt,
 	client *asynq.Client,
 	inspector *asynq.Inspector,
@@ -62,7 +62,6 @@ func NewServer(
 	vaultFilePath string,
 	mode string,
 	pluginType string,
-	pluginConfigs map[string]map[string]interface{},
 	logger *logrus.Logger,
 ) *Server {
 	logger.Infof("Server mode: %s, plugin type: %s", mode, pluginType)
@@ -108,14 +107,13 @@ func NewServer(
 		inspector:     inspector,
 		vaultFilePath: vaultFilePath,
 		sdClient:      sdClient,
-		blockStorage:  blockStorage,
+		vaultStorage:  vaultStorage,
 		mode:          mode,
 		plugin:        p,
 		db:            db,
 		scheduler:     schedulerService,
 		logger:        logger,
 		policyService: policyService,
-		pluginConfigs: pluginConfigs,
 	}
 }
 
@@ -287,24 +285,24 @@ func (s *Server) GetVault(c echo.Context) error {
 	}
 
 	filePathName := common.GetVaultBackupFilename(publicKeyECDSA)
-	content, err := s.blockStorage.GetFile(filePathName)
+	content, err := s.vaultStorage.GetVault(filePathName)
 	if err != nil {
 		wrappedErr := fmt.Errorf("fail to read file in GetVault, err: %w", err)
 		s.logger.Error(wrappedErr)
 		return wrappedErr
 	}
 
-	vault, err := common.DecryptVaultFromBackup(passwd, content)
+	v, err := common.DecryptVaultFromBackup(passwd, content)
 	if err != nil {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
 
 	return c.JSON(http.StatusOK, vtypes.VaultGetResponse{
-		Name:           vault.Name,
-		PublicKeyEcdsa: vault.PublicKeyEcdsa,
-		PublicKeyEddsa: vault.PublicKeyEddsa,
-		HexChainCode:   vault.HexChainCode,
-		LocalPartyId:   vault.LocalPartyId,
+		Name:           v.Name,
+		PublicKeyEcdsa: v.PublicKeyEcdsa,
+		PublicKeyEddsa: v.PublicKeyEddsa,
+		HexChainCode:   v.HexChainCode,
+		LocalPartyId:   v.LocalPartyId,
 	})
 }
 
@@ -331,7 +329,7 @@ func (s *Server) SignMessages(c echo.Context) error {
 	}
 
 	filePathName := common.GetVaultBackupFilename(req.PublicKey)
-	content, err := s.blockStorage.GetFile(filePathName)
+	content, err := s.vaultStorage.GetVault(filePathName)
 	if err != nil {
 		wrappedErr := fmt.Errorf("fail to read file in SignMessages, err: %w", err)
 		s.logger.Infof("fail to read file in SignMessages, err: %v", err)
@@ -398,7 +396,7 @@ func (s *Server) ExistVault(c echo.Context) error {
 	}
 
 	filePathName := common.GetVaultBackupFilename(publicKeyECDSA)
-	exist, err := s.blockStorage.FileExist(filePathName)
+	exist, err := s.vaultStorage.Exist(filePathName)
 	if err != nil || !exist {
 		return c.NoContent(http.StatusBadRequest)
 	}

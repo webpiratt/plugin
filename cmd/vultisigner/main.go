@@ -6,6 +6,7 @@ import (
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
+	"github.com/vultisig/verifier/vault"
 
 	"github.com/vultisig/plugin/api"
 	"github.com/vultisig/plugin/config"
@@ -50,7 +51,7 @@ func main() {
 		panic("vaults file path is empty")
 
 	}
-	blockStorage, err := storage.NewBlockStorage(*cfg)
+	vaultStorage, err := vault.NewBlockStorageImp(cfg.BlockStorage)
 	if err != nil {
 		panic(err)
 	}
@@ -64,7 +65,7 @@ func main() {
 		cfg,
 		db,
 		redisStorage,
-		blockStorage,
+		vaultStorage,
 		redisOptions,
 		client,
 		inspector,
@@ -72,7 +73,6 @@ func main() {
 		cfg.Server.VaultsFilePath,
 		cfg.Server.Mode,
 		cfg.Server.Plugin.Type,
-		cfg.Plugin.PluginConfigs,
 		logger,
 	)
 	if err := server.StartServer(); err != nil {
