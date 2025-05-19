@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
 	"github.com/vultisig/verifier/plugin"
+	vtypes "github.com/vultisig/verifier/types"
 
 	"github.com/vultisig/plugin/common"
 	"github.com/vultisig/plugin/config"
@@ -190,7 +191,7 @@ func (s *Server) GetDerivedPublicKey(c echo.Context) error {
 }
 
 func (s *Server) CreateVault(c echo.Context) error {
-	var req types.VaultCreateRequest
+	var req vtypes.VaultCreateRequest
 	if err := c.Bind(&req); err != nil {
 		return fmt.Errorf("fail to parse request, err: %w", err)
 	}
@@ -227,7 +228,7 @@ func (s *Server) CreateVault(c echo.Context) error {
 
 // ReshareVault is a handler to reshare a vault
 func (s *Server) ReshareVault(c echo.Context) error {
-	var req types.ReshareRequest
+	var req vtypes.ReshareRequest
 	if err := c.Bind(&req); err != nil {
 		return fmt.Errorf("fail to parse request, err: %w", err)
 	}
@@ -299,7 +300,7 @@ func (s *Server) GetVault(c echo.Context) error {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
 
-	return c.JSON(http.StatusOK, types.VaultGetResponse{
+	return c.JSON(http.StatusOK, vtypes.VaultGetResponse{
 		Name:           vault.Name,
 		PublicKeyEcdsa: vault.PublicKeyEcdsa,
 		PublicKeyEddsa: vault.PublicKeyEddsa,
@@ -312,7 +313,7 @@ func (s *Server) GetVault(c echo.Context) error {
 func (s *Server) SignMessages(c echo.Context) error {
 	s.logger.Debug("VERIFIER SERVER: SIGN MESSAGES")
 
-	var req types.KeysignRequest
+	var req vtypes.KeysignRequest
 	if err := c.Bind(&req); err != nil {
 		return fmt.Errorf("fail to parse request, err: %w", err)
 	}
