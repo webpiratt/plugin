@@ -307,13 +307,13 @@ func (s *Server) DeletePluginPolicyById(c echo.Context) error {
 }
 
 func (s *Server) GetPolicySchema(c echo.Context) error {
-	pluginType := c.Request().Header.Get("plugin_type") // this is a unique identifier; this won't be needed once the DCA and Payroll are separate services
-	if pluginType == "" {
-		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_type"))
+	pluginID := c.Request().Header.Get("plugin_id") // this is a unique identifier; this won't be needed once the DCA and Payroll are separate services
+	if pluginID == "" {
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("missing required header: plugin_id"))
 	}
 
 	// TODO: need to deal with both DCA and Payroll plugins
-	keyPath := filepath.Join("plugin", pluginType, "dcaPluginUiSchema.json")
+	keyPath := filepath.Join("plugin", pluginID, "dcaPluginUiSchema.json")
 	jsonData, err := os.ReadFile(keyPath)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, NewErrorResponse("failed to read plugin schema"))
