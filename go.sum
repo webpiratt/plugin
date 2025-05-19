@@ -733,8 +733,6 @@ github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f h1:124Xlloih1
 github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f/go.mod h1:UfGCxUQW08kiwxyNBiHwXe+ePPuBmHVVS+BS51aU/Jg=
 github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74 h1:goqwk4nQ/NEVIb3OPP9SUx7/u9ZfsUIcd5fIN/e4DVU=
 github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74/go.mod h1:nOykk4nOy1L3yXtLSlYvVsgizBnCQ3tR2N5uwGPdvaM=
-github.com/vultisig/verifier v0.0.0-20250513124642-41d01a15b222 h1:nb+OQcBXeFQ7W3ES5d32+UxjXCc5xaSRqwUV0oLQfEI=
-github.com/vultisig/verifier v0.0.0-20250513124642-41d01a15b222/go.mod h1:yLi3+WMVsA3FOKwTZm9QGmXQw14qWH3cDzg4JkB+jqg=
 github.com/vultisig/verifier v0.0.0-20250518231539-6ca51be2f52b h1:BzBf8k2qvNNK6XW8SbsY9jGLgbNHxDxLeW7kXLdu+Zg=
 github.com/vultisig/verifier v0.0.0-20250518231539-6ca51be2f52b/go.mod h1:yLi3+WMVsA3FOKwTZm9QGmXQw14qWH3cDzg4JkB+jqg=
 github.com/vultisig/vultiserver v0.0.0-20250421043311-443d711d503d h1:cXQm8SK1TJe/YIdCtQNrItVctABI3xe/L5Te0PmohTY=
