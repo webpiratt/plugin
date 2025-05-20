@@ -404,11 +404,7 @@ func (s *Server) getVault(publicKeyECDSA string) (*v1.Vault, error) {
 	vaultContent, err := s.vaultStorage.GetVault(fileName)
 	if err != nil {
 		s.logger.WithError(err).Error("fail to get vault")
-		return nil, fmt.Errorf("failed to get vault")
-	}
-	if vaultContent == nil {
-		s.logger.Error("vault not found")
-		return nil, fmt.Errorf("vault not found")
+		return nil, fmt.Errorf("failed to get vault, err: %w", err)
 	}
 
 	v, err := common.DecryptVaultFromBackup(s.cfg.EncryptionSecret, vaultContent)
