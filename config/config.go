@@ -31,6 +31,8 @@ type Config struct {
 		BaseConfigPath string `mapstructure:"base_config_path" json:"base_config_path,omitempty"`
 	} `mapstructure:"server" json:"server"`
 
+	EncryptionSecret string `mapstructure:"encryption_secret" json:"encryption_secret,omitempty"`
+
 	Plugin struct {
 		PluginConfigs map[string]map[string]interface{} `mapstructure:"plugin_configs" json:"plugin_configs,omitempty"`
 	} `mapstructure:"plugin" json:"plugin,omitempty"`

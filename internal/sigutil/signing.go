@@ -13,8 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/vultisig/mobile-tss-lib/tss"
-	"github.com/vultisig/verifier/address"
-	vcommon "github.com/vultisig/verifier/common"
 )
 
 func SignLegacyTx(keysignResponse tss.KeysignResponse, txHash string, rawTx string, chainID *big.Int) (*types.Transaction, *common.Address, error) {
@@ -70,14 +68,8 @@ func SignLegacyTx(keysignResponse tss.KeysignResponse, txHash string, rawTx stri
 	return signedTx, &sender, nil
 }
 
-func VerifySignature(vaultPublicKey string, chainCodeHex string, messageHex []byte, signature []byte) (bool, error) {
+func VerifyPolicySignature(publicKeyHex string, messageHex []byte, signature []byte) (bool, error) {
 	msgHash := crypto.Keccak256([]byte(fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(messageHex), messageHex)))
-
-	_, publicKeyHex, _, err := address.GetAddress(vaultPublicKey, chainCodeHex, vcommon.Ethereum)
-	if err != nil {
-		return false, err
-	}
-
 	publicKeyBytes, err := hex.DecodeString(publicKeyHex)
 	if err != nil {
 		return false, err

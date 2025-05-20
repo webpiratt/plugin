@@ -15,6 +15,9 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	v1 "github.com/vultisig/commondata/go/vultisig/vault/v1"
+	"github.com/vultisig/mobile-tss-lib/tss"
+	vcommon "github.com/vultisig/verifier/common"
 	"github.com/vultisig/verifier/plugin"
 	vtypes "github.com/vultisig/verifier/types"
 
@@ -91,7 +94,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 	}
 
 	filePathName := common.GetVaultBackupFilename(req.PublicKey)
-	content, err := s.blockStorage.GetFile(filePathName)
+	content, err := s.vaultStorage.GetVault(filePathName)
 	if err != nil {
 		wrappedErr := fmt.Errorf("fail to read file, err: %w", err)
 		s.logger.Infof("fail to read file in SignPluginMessages, err: %v", err)
@@ -374,14 +377,41 @@ func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) 
 		s.logger.WithError(err).Error("Failed to decode signature bytes")
 		return false
 	}
+	vault, err := s.getVault(policy.PublicKey)
+	if err != nil {
+		s.logger.WithError(err).Error("fail to get vault")
+		return false
+	}
+	derivedPublicKey, err := tss.GetDerivedPubKey(vault.PublicKeyEcdsa, vault.HexChainCode, vcommon.Ethereum.GetDerivePath(), false)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to get derived public key")
+		return false
+	}
 
-	//
-	isVerified, err := sigutil.VerifySignature(policy.PublicKey, "", msgBytes, signatureBytes)
+	isVerified, err := sigutil.VerifyPolicySignature(derivedPublicKey, msgBytes, signatureBytes)
 	if err != nil {
 		s.logger.WithError(err).Error("Failed to verify signature")
 		return false
 	}
 	return isVerified
+}
+
+func (s *Server) getVault(publicKeyECDSA string) (*v1.Vault, error) {
+	if len(s.cfg.EncryptionSecret) == 0 {
+		return nil, fmt.Errorf("no encryption secret")
+	}
+	fileName := common.GetVaultBackupFilename(publicKeyECDSA)
+	vaultContent, err := s.vaultStorage.GetVault(fileName)
+	if err != nil {
+		s.logger.WithError(err).Error("fail to get vault")
+		return nil, fmt.Errorf("failed to get vault, err: %w", err)
+	}
+
+	v, err := common.DecryptVaultFromBackup(s.cfg.EncryptionSecret, vaultContent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt vault,err: %w", err)
+	}
+	return v, nil
 }
 
 func policyToMessageHex(policy vtypes.PluginPolicy, isUpdate bool) (string, error) {
