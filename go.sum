@@ -395,8 +395,8 @@ github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f h1:124Xlloih1
 github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f/go.mod h1:UfGCxUQW08kiwxyNBiHwXe+ePPuBmHVVS+BS51aU/Jg=
 github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74 h1:goqwk4nQ/NEVIb3OPP9SUx7/u9ZfsUIcd5fIN/e4DVU=
 github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74/go.mod h1:nOykk4nOy1L3yXtLSlYvVsgizBnCQ3tR2N5uwGPdvaM=
-github.com/vultisig/verifier v0.0.0-20250521045839-b7aa281c73c0 h1:nwMDrkrZqy6o9yB1q2aY2EliqU5nVumetaVO7V0klxo=
-github.com/vultisig/verifier v0.0.0-20250521045839-b7aa281c73c0/go.mod h1:tIYI1DOi9IWSlc9HwHpBzv+FT2nmQjS85Cq1xfSOI5U=
+github.com/vultisig/verifier v0.0.0-20250521093243-5bde8eec8ec8 h1:6zeZLkrmLIvOOQnMsnNI92bVDhky23G/khBf7SonV+M=
+github.com/vultisig/verifier v0.0.0-20250521093243-5bde8eec8ec8/go.mod h1:tIYI1DOi9IWSlc9HwHpBzv+FT2nmQjS85Cq1xfSOI5U=
 github.com/vultisig/vultiserver v0.0.0-20250515110921-82d56d3d9cc9 h1:pZhGN8q8+gPB1JJjVDC1hDg8qn6Tbj0XBJymgTQ8qQg=
 github.com/vultisig/vultiserver v0.0.0-20250515110921-82d56d3d9cc9/go.mod h1:HwP2IgW6Mcu/gX8paFuKvfibrGE9UmPgkOFTub6dskM=
 github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 h1:gEOO8jv9F4OT7lGCjxCBTO/36wtF6j2nSip77qHd4x4=

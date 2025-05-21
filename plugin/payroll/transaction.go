@@ -27,7 +27,6 @@ import (
 
 // TODO: remove once the plugin installation is implemented
 const (
-	vaultPassword    = "pass"
 	hexEncryptionKey = "hexencryptionkey"
 )
 
@@ -69,7 +68,6 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 				HexEncryptionKey: hexEncryptionKey,
 				DerivePath:       chain.GetDerivePath(),
 				IsECDSA:          !chain.IsEdDSA(),
-				VaultPassword:    vaultPassword,
 				PluginID:         policy.PluginID.String(),
 			},
 			Transaction: hex.EncodeToString(rawTx),

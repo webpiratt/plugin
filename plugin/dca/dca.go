@@ -38,7 +38,6 @@ const (
 
 // TODO: remove once the plugin installation is implemented (resharding)
 const (
-	vaultPassword    = "888717"
 	hexEncryptionKey = "539440138236b389cb0355aa1e81d11e51e9ad7c94b09bb45704635913604a73"
 )
 
@@ -353,7 +352,6 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.Pl
 				HexEncryptionKey: hexEncryptionKey,
 				DerivePath:       chain.GetDerivePath(),
 				IsECDSA:          true,
-				VaultPassword:    vaultPassword,
 				Parties: []string{
 					common.PluginPartyID,
 					common.VerifierPartyID},

@@ -102,7 +102,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 		return wrappedErr
 	}
 
-	_, err = vcommon.DecryptVaultFromBackup(req.VaultPassword, content)
+	_, err = vcommon.DecryptVaultFromBackup(s.cfg.EncryptionSecret, content)
 	if err != nil {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
