@@ -53,7 +53,6 @@ func main() {
 	}
 	mux := asynq.NewServeMux()
 	//	mux.HandleFunc(tasks.TypePluginTransaction, vaultService.HandlePluginTransaction)
-	mux.HandleFunc(tasks.TypeKeyGenerationDKLS, vaultService.HandleKeyGenerationDKLS)
 	mux.HandleFunc(tasks.TypeKeySignDKLS, vaultService.HandleKeySignDKLS)
 	mux.HandleFunc(tasks.TypeReshareDKLS, vaultService.HandleReshareDKLS)
 	if err := srv.Run(mux); err != nil {

@@ -93,7 +93,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 		s.logger.Errorf("fail to set session, err: %v", err)
 	}
 
-	filePathName := common.GetVaultBackupFilename(req.PublicKey)
+	filePathName := vcommon.GetVaultBackupFilename(req.PublicKey, policy.PluginID.String())
 	content, err := s.vaultStorage.GetVault(filePathName)
 	if err != nil {
 		wrappedErr := fmt.Errorf("fail to read file, err: %w", err)
@@ -102,7 +102,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 		return wrappedErr
 	}
 
-	_, err = common.DecryptVaultFromBackup(req.VaultPassword, content)
+	_, err = vcommon.DecryptVaultFromBackup(s.cfg.EncryptionSecret, content)
 	if err != nil {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
@@ -377,7 +377,7 @@ func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) 
 		s.logger.WithError(err).Error("Failed to decode signature bytes")
 		return false
 	}
-	vault, err := s.getVault(policy.PublicKey)
+	vault, err := s.getVault(policy.PublicKey, policy.PluginID.String())
 	if err != nil {
 		s.logger.WithError(err).Error("fail to get vault")
 		return false
@@ -396,18 +396,18 @@ func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) 
 	return isVerified
 }
 
-func (s *Server) getVault(publicKeyECDSA string) (*v1.Vault, error) {
+func (s *Server) getVault(publicKeyECDSA, pluginId string) (*v1.Vault, error) {
 	if len(s.cfg.EncryptionSecret) == 0 {
 		return nil, fmt.Errorf("no encryption secret")
 	}
-	fileName := common.GetVaultBackupFilename(publicKeyECDSA)
+	fileName := vcommon.GetVaultBackupFilename(publicKeyECDSA, pluginId)
 	vaultContent, err := s.vaultStorage.GetVault(fileName)
 	if err != nil {
 		s.logger.WithError(err).Error("fail to get vault")
 		return nil, fmt.Errorf("failed to get vault, err: %w", err)
 	}
 
-	v, err := common.DecryptVaultFromBackup(s.cfg.EncryptionSecret, vaultContent)
+	v, err := vcommon.DecryptVaultFromBackup(s.cfg.EncryptionSecret, vaultContent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt vault,err: %w", err)
 	}
