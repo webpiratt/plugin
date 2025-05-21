@@ -220,14 +220,14 @@ func (s *Server) ReshareVault(c echo.Context) error {
 func (s *Server) GetVault(c echo.Context) error {
 	publicKeyECDSA := c.Param("publicKeyECDSA")
 	if publicKeyECDSA == "" {
-		return fmt.Errorf("public key is required")
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("public key is required"))
 	}
 	if !s.isValidHash(publicKeyECDSA) {
 		return c.NoContent(http.StatusBadRequest)
 	}
 	pluginId := c.Param("pluginId")
 	if pluginId == "" {
-		return fmt.Errorf("plugin id is required")
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("pluginId is required"))
 	}
 
 	filePathName := vcommon.GetVaultBackupFilename(publicKeyECDSA, pluginId)
@@ -240,7 +240,8 @@ func (s *Server) GetVault(c echo.Context) error {
 
 	v, err := vcommon.DecryptVaultFromBackup(s.cfg.EncryptionSecret, content)
 	if err != nil {
-		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
+		s.logger.WithError(err).Error("fail to decrypt vault")
+		return c.JSON(http.StatusInternalServerError, NewErrorResponse("fail to get vault"))
 	}
 
 	return c.JSON(http.StatusOK, vtypes.VaultGetResponse{
@@ -335,14 +336,14 @@ func (s *Server) isValidHash(hash string) bool {
 func (s *Server) ExistVault(c echo.Context) error {
 	publicKeyECDSA := c.Param("publicKeyECDSA")
 	if publicKeyECDSA == "" {
-		return fmt.Errorf("public key is required")
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("public key is required"))
 	}
 	if !s.isValidHash(publicKeyECDSA) {
 		return c.NoContent(http.StatusBadRequest)
 	}
 	pluginId := c.Param("pluginId")
 	if pluginId == "" {
-		return fmt.Errorf("plugin id is required")
+		return c.JSON(http.StatusBadRequest, NewErrorResponse("plugin id is required"))
 	}
 
 	filePathName := vcommon.GetVaultBackupFilename(publicKeyECDSA, pluginId)
