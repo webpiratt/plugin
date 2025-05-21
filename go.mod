@@ -19,9 +19,8 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/vultisig/commondata v0.0.0-20250430024109-a2492623ef05
 	github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74
-	github.com/vultisig/verifier v0.0.0-20250519231625-445ef00a1093
+	github.com/vultisig/verifier v0.0.0-20250521045839-b7aa281c73c0
 	github.com/vultisig/vultiserver v0.0.0-20250515110921-82d56d3d9cc9
-	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -57,6 +56,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/vultisig/go-wrappers v0.0.0-20250403041248-86911e8aa33f // indirect
 	golang.org/x/sync v0.12.0 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
@@ -90,7 +90,7 @@ require (
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/ulikunitz/xz v0.5.12
+	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

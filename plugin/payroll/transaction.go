@@ -70,10 +70,11 @@ func (p *PayrollPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtype
 				DerivePath:       chain.GetDerivePath(),
 				IsECDSA:          !chain.IsEdDSA(),
 				VaultPassword:    vaultPassword,
+				PluginID:         policy.PluginID.String(),
 			},
 			Transaction: hex.EncodeToString(rawTx),
-			PluginID:    policy.PluginID.String(),
-			PolicyID:    policy.ID.String(),
+
+			PolicyID: policy.ID.String(),
 		}
 		txs = append(txs, signRequest)
 	}

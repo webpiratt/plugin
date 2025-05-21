@@ -354,10 +354,12 @@ func (p *DCAPlugin) ProposeTransactions(policy vtypes.PluginPolicy) ([]vtypes.Pl
 				DerivePath:       chain.GetDerivePath(),
 				IsECDSA:          true,
 				VaultPassword:    vaultPassword,
-				Parties:          []string{common.PluginPartyID, common.VerifierPartyID},
+				Parties: []string{
+					common.PluginPartyID,
+					common.VerifierPartyID},
+				PluginID: policy.PluginID.String(),
 			},
 			Transaction:     hex.EncodeToString(data.RlpTxBytes),
-			PluginID:        policy.PluginID.String(),
 			PolicyID:        policy.ID.String(),
 			TransactionType: data.Type,
 		}

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -16,11 +15,11 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/sirupsen/logrus"
 	"github.com/vultisig/mobile-tss-lib/tss"
+	vcommon "github.com/vultisig/verifier/common"
 	"github.com/vultisig/verifier/plugin"
 	vtypes "github.com/vultisig/verifier/types"
 	"github.com/vultisig/verifier/vault"
 
-	"github.com/vultisig/plugin/common"
 	"github.com/vultisig/plugin/config"
 	"github.com/vultisig/plugin/internal/scheduler"
 	"github.com/vultisig/plugin/internal/tasks"
@@ -137,12 +136,11 @@ func (s *Server) StartServer() error {
 	e.POST("/signFromPlugin", s.SignPluginMessages)
 
 	grp := e.Group("/vault")
-	grp.POST("/create", s.CreateVault)
 	grp.POST("/reshare", s.ReshareVault)
-	grp.GET("/get/:publicKeyECDSA", s.GetVault)           // Get Vault Data
-	grp.GET("/exist/:publicKeyECDSA", s.ExistVault)       // Check if Vault exists
-	grp.POST("/sign", s.SignMessages)                     // Sign messages
-	grp.GET("/sign/response/:taskId", s.GetKeysignResult) // Get keysign result
+	grp.GET("/get/:pluginId/:publicKeyECDSA", s.GetVault)     // Get Vault Data
+	grp.GET("/exist/:pluginId/:publicKeyECDSA", s.ExistVault) // Check if Vault exists
+	grp.POST("/sign", s.SignMessages)                         // Sign messages
+	grp.GET("/sign/response/:taskId", s.GetKeysignResult)     // Get keysign result
 
 	pluginGroup := e.Group("/plugin")
 
@@ -187,42 +185,6 @@ func (s *Server) GetDerivedPublicKey(c echo.Context) error {
 	return c.JSON(http.StatusOK, derivedPublicKey)
 }
 
-func (s *Server) CreateVault(c echo.Context) error {
-	var req vtypes.VaultCreateRequest
-	if err := c.Bind(&req); err != nil {
-		return fmt.Errorf("fail to parse request, err: %w", err)
-	}
-	if err := req.IsValid(); err != nil {
-		return fmt.Errorf("invalid request, err: %w", err)
-	}
-	buf, err := json.Marshal(req)
-	if err != nil {
-		return fmt.Errorf("fail to marshal to json, err: %w", err)
-	}
-	if err := s.sdClient.Count("vault.create", 1, nil, 1); err != nil {
-		s.logger.Errorf("fail to count metric, err: %v", err)
-	}
-
-	result, err := s.redis.Get(c.Request().Context(), req.SessionID)
-	if err == nil && result != "" {
-		return c.NoContent(http.StatusOK)
-	}
-
-	if err := s.redis.Set(c.Request().Context(), req.SessionID, req.SessionID, 5*time.Minute); err != nil {
-		s.logger.Errorf("fail to set session, err: %v", err)
-	}
-
-	_, err = s.client.Enqueue(asynq.NewTask(tasks.TypeKeyGenerationDKLS, buf),
-		asynq.MaxRetry(-1),
-		asynq.Timeout(7*time.Minute),
-		asynq.Retention(10*time.Minute),
-		asynq.Queue(tasks.QUEUE_NAME))
-	if err != nil {
-		return fmt.Errorf("fail to enqueue task, err: %w", err)
-	}
-	return c.NoContent(http.StatusOK)
-}
-
 // ReshareVault is a handler to reshare a vault
 func (s *Server) ReshareVault(c echo.Context) error {
 	var req vtypes.ReshareRequest
@@ -255,22 +217,6 @@ func (s *Server) ReshareVault(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (s *Server) extractXPassword(c echo.Context) (string, error) {
-	passwd := c.Request().Header.Get("x-password")
-	if passwd == "" {
-		return "", fmt.Errorf("vault backup password is required")
-	}
-
-	rawPwd, err := base64.StdEncoding.DecodeString(passwd)
-	if err == nil && len(rawPwd) > 0 {
-		passwd = string(rawPwd)
-	} else {
-		s.logger.Infof("fail to unescape password, err: %v", err)
-	}
-
-	return passwd, nil
-}
-
 func (s *Server) GetVault(c echo.Context) error {
 	publicKeyECDSA := c.Param("publicKeyECDSA")
 	if publicKeyECDSA == "" {
@@ -279,12 +225,12 @@ func (s *Server) GetVault(c echo.Context) error {
 	if !s.isValidHash(publicKeyECDSA) {
 		return c.NoContent(http.StatusBadRequest)
 	}
-	passwd, err := s.extractXPassword(c)
-	if err != nil {
-		return fmt.Errorf("fail to extract password, err: %w", err)
+	pluginId := c.Param("pluginId")
+	if pluginId == "" {
+		return fmt.Errorf("plugin id is required")
 	}
 
-	filePathName := common.GetVaultBackupFilename(publicKeyECDSA)
+	filePathName := vcommon.GetVaultBackupFilename(publicKeyECDSA, pluginId)
 	content, err := s.vaultStorage.GetVault(filePathName)
 	if err != nil {
 		wrappedErr := fmt.Errorf("fail to read file in GetVault, err: %w", err)
@@ -292,7 +238,7 @@ func (s *Server) GetVault(c echo.Context) error {
 		return wrappedErr
 	}
 
-	v, err := common.DecryptVaultFromBackup(passwd, content)
+	v, err := vcommon.DecryptVaultFromBackup(s.cfg.EncryptionSecret, content)
 	if err != nil {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
@@ -328,7 +274,7 @@ func (s *Server) SignMessages(c echo.Context) error {
 		s.logger.Errorf("fail to set session, err: %v", err)
 	}
 
-	filePathName := common.GetVaultBackupFilename(req.PublicKey)
+	filePathName := vcommon.GetVaultBackupFilename(req.PublicKey, req.PluginID)
 	content, err := s.vaultStorage.GetVault(filePathName)
 	if err != nil {
 		wrappedErr := fmt.Errorf("fail to read file in SignMessages, err: %w", err)
@@ -337,7 +283,7 @@ func (s *Server) SignMessages(c echo.Context) error {
 		return wrappedErr
 	}
 
-	_, err = common.DecryptVaultFromBackup(req.VaultPassword, content)
+	_, err = vcommon.DecryptVaultFromBackup(req.VaultPassword, content)
 	if err != nil {
 		return fmt.Errorf("fail to decrypt vault from the backup, err: %w", err)
 	}
@@ -394,8 +340,12 @@ func (s *Server) ExistVault(c echo.Context) error {
 	if !s.isValidHash(publicKeyECDSA) {
 		return c.NoContent(http.StatusBadRequest)
 	}
+	pluginId := c.Param("pluginId")
+	if pluginId == "" {
+		return fmt.Errorf("plugin id is required")
+	}
 
-	filePathName := common.GetVaultBackupFilename(publicKeyECDSA)
+	filePathName := vcommon.GetVaultBackupFilename(publicKeyECDSA, pluginId)
 	exist, err := s.vaultStorage.Exist(filePathName)
 	if err != nil || !exist {
 		return c.NoContent(http.StatusBadRequest)
