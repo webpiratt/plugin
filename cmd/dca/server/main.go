@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/hibiken/asynq"
@@ -20,7 +21,7 @@ func main() {
 		panic(err)
 	}
 	logger := logrus.New()
-	sdClient, err := statsd.New(fmt.Sprintf("%s:%s", cfg.Datadog.Host, cfg.Datadog.Port))
+	sdClient, err := statsd.New(net.JoinHostPort(cfg.Datadog.Host, cfg.Datadog.Port))
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +30,7 @@ func main() {
 		panic(err)
 	}
 	redisOptions := asynq.RedisClientOpt{
-		Addr:     cfg.Redis.Host + ":" + cfg.Redis.Port,
+		Addr:     net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
 		Username: cfg.Redis.User,
 		Password: cfg.Redis.Password,
 		DB:       cfg.Redis.DB,

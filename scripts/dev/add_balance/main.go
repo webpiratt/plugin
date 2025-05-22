@@ -30,10 +30,12 @@ var (
 
 var vaultName string
 var stateDir string
+var ethRpcUrl string
 
 func main() {
 	flag.StringVar(&vaultName, "vault", "", "vault name")
 	flag.StringVar(&stateDir, "state-dir", "", "state directory")
+	flag.StringVar(&ethRpcUrl, "eth-rpc", "http://localhost:8545", "Ethereum RPC URL")
 	flag.Parse()
 
 	if vaultName == "" {
@@ -62,7 +64,7 @@ func main() {
 	}
 	fmt.Println("To vault address:", vaultAddress.Hex())
 	//  set the ETH node url
-	rpcClient, err := ethclient.Dial("")
+	rpcClient, err := ethclient.Dial(ethRpcUrl)
 	if err != nil {
 		panic(err)
 	}
