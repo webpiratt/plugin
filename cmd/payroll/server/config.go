@@ -14,12 +14,12 @@ import (
 type PayrollServerConfig struct {
 	Server         api.ServerConfig         `mapstructure:"server" json:"server"`
 	BaseConfigPath string                   `mapstructure:"base_config_path" json:"base_config_path,omitempty"`
-	Redis          storage.RedisConfig      `mapstructure:"redis" json:"redis,omitempty" mapstructure:"server" json:"redis"`
-	BlockStorage   vault.BlockStorageConfig `mapstructure:"block_storage" json:"block_storage,omitempty" mapstructure:"server" json:"block_storage"`
+	Redis          storage.RedisConfig      `mapstructure:"redis" json:"redis,omitempty"`
+	BlockStorage   vault.BlockStorageConfig `mapstructure:"block_storage" json:"block_storage,omitempty"`
 	Datadog        struct {
-		Host string `mapstructure:"host" json:"host,omitempty" mapstructure:"server" json:"host"`
-		Port string `mapstructure:"port" json:"port,omitempty" mapstructure:"server" json:"port"`
-	} `mapstructure:"datadog" json:"datadog" mapstructure:"server" json:"datadog"`
+		Host string `mapstructure:"host" json:"host,omitempty"`
+		Port string `mapstructure:"port" json:"port,omitempty"`
+	} `mapstructure:"datadog" json:"datadog"`
 }
 
 func GetConfigure() (*PayrollServerConfig, error) {
