@@ -9,28 +9,25 @@ import (
 	"github.com/vultisig/verifier/vault"
 
 	"github.com/vultisig/plugin/api"
-	"github.com/vultisig/plugin/config"
+	"github.com/vultisig/plugin/plugin/payroll"
 	"github.com/vultisig/plugin/storage"
 	"github.com/vultisig/plugin/storage/postgres"
 )
 
 func main() {
-	cfg, err := config.GetConfigure()
+	cfg, err := GetConfigure()
 	if err != nil {
 		panic(err)
 	}
 	logger := logrus.New()
-
 	sdClient, err := statsd.New(fmt.Sprintf("%s:%s", cfg.Datadog.Host, cfg.Datadog.Port))
 	if err != nil {
 		panic(err)
 	}
-
-	redisStorage, err := storage.NewRedisStorage(*cfg)
+	redisStorage, err := storage.NewRedisStorage(cfg.Redis)
 	if err != nil {
 		panic(err)
 	}
-
 	redisOptions := asynq.RedisClientOpt{
 		Addr:     cfg.Redis.Host + ":" + cfg.Redis.Port,
 		Username: cfg.Redis.User,
@@ -46,10 +43,7 @@ func main() {
 	}()
 
 	inspector := asynq.NewInspector(redisOptions)
-	if cfg.Server.VaultsFilePath == "" {
-		panic("vaults file path is empty")
 
-	}
 	vaultStorage, err := vault.NewBlockStorageImp(cfg.BlockStorage)
 	if err != nil {
 		panic(err)
@@ -59,9 +53,12 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Failed to connect to database: %v", err)
 	}
-
+	p, err := payroll.NewPayrollPlugin(db, logger, cfg.BaseConfigPath)
+	if err != nil {
+		logger.Fatalf("failed to create payroll plugin,err: %s", err)
+	}
 	server := api.NewServer(
-		cfg,
+		cfg.Server,
 		db,
 		redisStorage,
 		vaultStorage,
@@ -69,9 +66,7 @@ func main() {
 		client,
 		inspector,
 		sdClient,
-		cfg.Server.VaultsFilePath,
-		logger,
-	)
+		p)
 	if err := server.StartServer(); err != nil {
 		panic(err)
 	}

@@ -6,21 +6,27 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/vultisig/vultiserver/contexthelper"
-
-	"github.com/vultisig/plugin/config"
 )
 
+type RedisConfig struct {
+	Host     string `mapstructure:"host" json:"host,omitempty"`
+	Port     string `mapstructure:"port" json:"port,omitempty"`
+	User     string `mapstructure:"user" json:"user,omitempty"`
+	Password string `mapstructure:"password" json:"password,omitempty"`
+	DB       int    `mapstructure:"db" json:"db,omitempty"`
+}
+
 type RedisStorage struct {
-	cfg    config.Config
+	cfg    RedisConfig
 	client *redis.Client
 }
 
-func NewRedisStorage(cfg config.Config) (*RedisStorage, error) {
+func NewRedisStorage(cfg RedisConfig) (*RedisStorage, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Host + ":" + cfg.Redis.Port,
-		Username: cfg.Redis.User,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
+		Addr:     cfg.Host + ":" + cfg.Port,
+		Username: cfg.User,
+		Password: cfg.Password,
+		DB:       cfg.DB,
 	})
 	status := client.Ping(context.Background())
 	if status.Err() != nil {

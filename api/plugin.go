@@ -18,15 +18,12 @@ import (
 	v1 "github.com/vultisig/commondata/go/vultisig/vault/v1"
 	"github.com/vultisig/mobile-tss-lib/tss"
 	vcommon "github.com/vultisig/verifier/common"
-	"github.com/vultisig/verifier/plugin"
 	vtypes "github.com/vultisig/verifier/types"
 
 	"github.com/vultisig/plugin/common"
 	"github.com/vultisig/plugin/internal/sigutil"
 	"github.com/vultisig/plugin/internal/tasks"
 	"github.com/vultisig/plugin/internal/types"
-	"github.com/vultisig/plugin/plugin/dca"
-	"github.com/vultisig/plugin/plugin/payroll"
 )
 
 type ErrorResponse struct {
@@ -63,14 +60,7 @@ func (s *Server) SignPluginMessages(c echo.Context) error {
 		return fmt.Errorf("policy plugin ID mismatch")
 	}
 
-	// We re-init plugin as verification server doesn't have plugin defined
-	var plg plugin.Plugin
-	plg, err = s.initializePlugin(policy.PluginID)
-	if err != nil {
-		return fmt.Errorf("failed to initialize plugin: %w", err)
-	}
-
-	if err := plg.ValidateProposedTransactions(policy, []vtypes.PluginKeysignRequest{req}); err != nil {
+	if err := s.plugin.ValidateProposedTransactions(policy, []vtypes.PluginKeysignRequest{req}); err != nil {
 		return fmt.Errorf("failed to validate transaction proposal: %w", err)
 	}
 
@@ -200,16 +190,7 @@ func (s *Server) CreatePluginPolicy(c echo.Context) error {
 
 	// We re-init plugin as verification server doesn't have plugin defined
 
-	var plg plugin.Plugin
-	plg, err := s.initializePlugin(policy.PluginID)
-	if err != nil {
-		s.logger.WithError(err).
-			WithField("plugin_id", policy.PluginID).
-			Error("Failed to initialize plugin")
-		return c.JSON(http.StatusBadRequest, NewErrorResponse("failed to initialize plugin"))
-	}
-
-	if err := plg.ValidatePluginPolicy(policy); err != nil {
+	if err := s.plugin.ValidatePluginPolicy(policy); err != nil {
 		s.logger.WithError(err).Error("Failed to validate plugin policy")
 		return c.JSON(http.StatusBadRequest, NewErrorResponse("failed to validate policy"))
 	}
@@ -238,17 +219,7 @@ func (s *Server) UpdatePluginPolicyById(c echo.Context) error {
 		return fmt.Errorf("fail to parse request, err: %w", err)
 	}
 
-	// We re-init plugin as verification server doesn't have plugin defined
-	var plg plugin.Plugin
-	plg, err := s.initializePlugin(policy.PluginID)
-	if err != nil {
-		s.logger.WithError(err).
-			WithField("plugin_id", policy.PluginID).
-			Error("Failed to initialize plugin")
-		return c.JSON(http.StatusBadRequest, NewErrorResponse("failed to initialize plugin"))
-	}
-
-	if err := plg.ValidatePluginPolicy(policy); err != nil {
+	if err := s.plugin.ValidatePluginPolicy(policy); err != nil {
 		s.logger.WithError(err).
 			WithField("plugin_id", policy.PluginID).
 			WithField("policy_id", policy.ID).
@@ -349,16 +320,6 @@ func (s *Server) GetPluginPolicyTransactionHistory(c echo.Context) error {
 	return c.JSON(http.StatusOK, policyHistory)
 }
 
-func (s *Server) initializePlugin(pluginID vtypes.PluginID) (plugin.Plugin, error) {
-	switch pluginID {
-	case vtypes.PluginVultisigPayroll_0000:
-		return payroll.NewPayrollPlugin(s.db, s.logger, s.cfg.Server.BaseConfigPath)
-	case vtypes.PluginVultisigDCA_0000:
-		return dca.NewDCAPlugin(s.db, s.logger, s.cfg.Server.BaseConfigPath)
-	default:
-		return nil, fmt.Errorf("unknown plugin type: %s", pluginID)
-	}
-}
 func (s *Server) verifyPolicySignature(policy vtypes.PluginPolicy, update bool) bool {
 	msgHex, err := policyToMessageHex(policy, update)
 	if err != nil {

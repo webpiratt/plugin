@@ -16,18 +16,6 @@ type Config struct {
 			DSN string `mapstructure:"dsn" json:"dsn,omitempty"`
 		} `mapstructure:"database" json:"database,omitempty"`
 		VaultsFilePath string `mapstructure:"vaults_file_path" json:"vaults_file_path,omitempty"`
-		Mode           string `mapstructure:"mode" json:"mode,omitempty"`
-		VerifierURL    string `mapstructure:"verifier_url" json:"verifier_url,omitempty"`
-		Plugin         struct {
-			Type string `mapstructure:"type" json:"type,omitempty"`
-			Eth  struct {
-				Rpc     string `mapstructure:"rpc" json:"rpc,omitempty"`
-				Uniswap struct {
-					V2Router string `mapstructure:"v2_router" json:"v2_router,omitempty"`
-					Deadline int64  `mapstructure:"deadline" json:"deadline,omitempty"`
-				} `mapstructure:"uniswap" json:"uniswap,omitempty"`
-			} `mapstructure:"eth" json:"eth,omitempty"`
-		} `mapstructure:"plugin" json:"plugin,omitempty"`
 		BaseConfigPath string `mapstructure:"base_config_path" json:"base_config_path,omitempty"`
 	} `mapstructure:"server" json:"server"`
 
