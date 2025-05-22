@@ -8,6 +8,13 @@ import (
 	"github.com/vultisig/vultiserver/contexthelper"
 )
 
+// RedisConfig holds the configuration parameters for connecting to a Redis instance.
+// Fields:
+// - Host: The hostname or IP address of the Redis server.
+// - Port: The port number on which the Redis server is listening.
+// - User: The username for authentication (if required by the Redis server).
+// - Password: The password for authentication (if required by the Redis server).
+// - DB: The Redis database number to use (default is 0).
 type RedisConfig struct {
 	Host     string `mapstructure:"host" json:"host,omitempty"`
 	Port     string `mapstructure:"port" json:"port,omitempty"`
