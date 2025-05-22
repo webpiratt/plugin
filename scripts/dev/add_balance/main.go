@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/vultisig/plugin/common"
-	"github.com/vultisig/plugin/config"
 )
 
 const (
@@ -62,13 +61,8 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("To vault address:", vaultAddress.Hex())
-
-	pluginConfig, err := config.ReadConfig("config-plugin")
-	if err != nil {
-		panic(err)
-	}
-
-	rpcClient, err := ethclient.Dial(pluginConfig.Server.Plugin.Eth.Rpc)
+	//  set the ETH node url
+	rpcClient, err := ethclient.Dial("")
 	if err != nil {
 		panic(err)
 	}

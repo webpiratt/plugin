@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	vtypes "github.com/vultisig/verifier/types"
 
-	"github.com/vultisig/plugin/config"
 	"github.com/vultisig/plugin/plugin/dca"
 )
 
@@ -48,11 +47,6 @@ func main() {
 	key := string(rawKey)
 
 	fmt.Printf("Public key for vault %s:\n%s\n", vaultName, key)
-
-	pluginConfig, err := config.ReadConfig("config-plugin")
-	if err != nil {
-		panic(err)
-	}
 
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter source token contract address: ")
@@ -107,7 +101,7 @@ func main() {
 	fmt.Println("DCA policy", string(policyBytes))
 	policy.Policy = policyBytes
 
-	pluginHost := fmt.Sprintf("http://%s:%d", pluginConfig.Server.Host, pluginConfig.Server.Port)
+	pluginHost := fmt.Sprintf("http://%s:%d", "localhost", 8080)
 
 	reqBytes, err := json.Marshal(policy)
 	if err != nil {
