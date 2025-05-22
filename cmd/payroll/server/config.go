@@ -39,7 +39,7 @@ func ReadConfig(configName string) (*PayrollServerConfig, error) {
 	viper.SetDefault("Server.VaultsFilePath", "vaults")
 
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("fail to reading config file, %w", err)
+		return nil, fmt.Errorf("failed to read config file, %w", err)
 	}
 	var cfg PayrollServerConfig
 	err := viper.Unmarshal(&cfg)
