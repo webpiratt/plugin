@@ -11,7 +11,7 @@ import (
 	"github.com/vultisig/plugin/storage"
 )
 
-type PayrollServerConfig struct {
+type DCAServerConfig struct {
 	Server         api.ServerConfig         `mapstructure:"server" json:"server"`
 	BaseConfigPath string                   `mapstructure:"base_config_path" json:"base_config_path,omitempty"`
 	Redis          storage.RedisConfig      `mapstructure:"redis" json:"redis,omitempty" mapstructure:"server" json:"redis"`
@@ -22,7 +22,7 @@ type PayrollServerConfig struct {
 	} `mapstructure:"datadog" json:"datadog" mapstructure:"server" json:"datadog"`
 }
 
-func GetConfigure() (*PayrollServerConfig, error) {
+func GetConfigure() (*DCAServerConfig, error) {
 	configName := os.Getenv("VS_CONFIG_NAME")
 	if configName == "" {
 		configName = "config"
@@ -31,7 +31,7 @@ func GetConfigure() (*PayrollServerConfig, error) {
 	return ReadConfig(configName)
 }
 
-func ReadConfig(configName string) (*PayrollServerConfig, error) {
+func ReadConfig(configName string) (*DCAServerConfig, error) {
 	viper.SetConfigName(configName)
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
@@ -41,7 +41,7 @@ func ReadConfig(configName string) (*PayrollServerConfig, error) {
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("fail to reading config file, %w", err)
 	}
-	var cfg PayrollServerConfig
+	var cfg DCAServerConfig
 	err := viper.Unmarshal(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode into struct, %w", err)
