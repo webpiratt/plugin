@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	vtypes "github.com/vultisig/verifier/types"
 
-	"github.com/vultisig/plugin/config"
 	"github.com/vultisig/plugin/plugin/payroll"
 )
 
@@ -48,16 +47,6 @@ func main() {
 	key := string(rawKey)
 
 	fmt.Printf("Public key for vault %s:\n%s\n", vaultName, key)
-
-	serverConfig, err := config.ReadConfig("config-verifier")
-	if err != nil {
-		panic(err)
-	}
-
-	pluginConfig, err := config.ReadConfig("config-plugin")
-	if err != nil {
-		panic(err)
-	}
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -140,8 +129,8 @@ func main() {
 	fmt.Println("Payroll policy", string(policyBytes))
 	policy.Policy = policyBytes
 
-	serverHost := fmt.Sprintf("http://%s:%d", serverConfig.Server.Host, serverConfig.Server.Port)
-	pluginHost := fmt.Sprintf("http://%s:%d", pluginConfig.Server.Host, pluginConfig.Server.Port)
+	serverHost := fmt.Sprintf("http://%s:%d", "localhost", 8080)
+	pluginHost := fmt.Sprintf("http://%s:%d", "localhost", 8081)
 
 	fmt.Printf("Creating policy on verifier server: %s\n", serverHost)
 	reqBytes, err := json.Marshal(policy)

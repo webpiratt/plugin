@@ -4,30 +4,27 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/sirupsen/logrus"
-
-	"github.com/vultisig/plugin/config"
+	"github.com/vultisig/verifier/vault"
 )
 
 type BlockStorage struct {
-	cfg      config.Config
+	cfg      vault.BlockStorageConfig
 	session  *session.Session
 	s3Client *s3.S3
 	logger   *logrus.Logger
 }
 
-func NewBlockStorage(cfg config.Config) (*BlockStorage, error) {
+func NewBlockStorage(cfg vault.BlockStorageConfig) (*BlockStorage, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region:           aws.String(cfg.BlockStorage.Region),
-		Endpoint:         aws.String(cfg.BlockStorage.Host),
-		Credentials:      credentials.NewStaticCredentials(cfg.BlockStorage.AccessKey, cfg.BlockStorage.SecretKey, ""),
+		Region:           aws.String(cfg.Region),
+		Endpoint:         aws.String(cfg.Host),
+		Credentials:      credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
 		S3ForcePathStyle: aws.Bool(true),
 	})
 	if err != nil {
@@ -43,13 +40,11 @@ func NewBlockStorage(cfg config.Config) (*BlockStorage, error) {
 
 func (bs *BlockStorage) FileExist(fileName string) (bool, error) {
 	_, err := bs.s3Client.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(bs.cfg.BlockStorage.Bucket),
+		Bucket: aws.String(bs.cfg.Bucket),
 		Key:    aws.String(fileName),
 	})
 	if err != nil {
 		bs.logger.Error(err)
-		filePathName := filepath.Join(bs.cfg.Server.VaultsFilePath, fileName)
-		_, err := os.Stat(filePathName)
 		return false, err
 	}
 	return true, nil
@@ -66,9 +61,9 @@ func (bs *BlockStorage) UploadFileWithRetry(fileContent []byte, fileName string,
 	return err
 }
 func (bs *BlockStorage) UploadFile(fileContent []byte, fileName string) error {
-	bs.logger.Infoln("upload file", fileName, "bucket", bs.cfg.BlockStorage.Bucket, "content length", len(fileContent))
+	bs.logger.Infoln("upload file", fileName, "bucket", bs.cfg.Bucket, "content length", len(fileContent))
 	output, err := bs.s3Client.PutObjectWithContext(context.TODO(), &s3.PutObjectInput{
-		Bucket:        aws.String(bs.cfg.BlockStorage.Bucket),
+		Bucket:        aws.String(bs.cfg.Bucket),
 		Key:           aws.String(fileName),
 		Body:          aws.ReadSeekCloser(bytes.NewReader(fileContent)),
 		ContentLength: aws.Int64(int64(len(fileContent))),
@@ -84,9 +79,9 @@ func (bs *BlockStorage) UploadFile(fileContent []byte, fileName string) error {
 }
 
 func (bs *BlockStorage) GetFile(fileName string) ([]byte, error) {
-	bs.logger.Infoln("get file", fileName, "bucket", bs.cfg.BlockStorage.Bucket)
+	bs.logger.Infoln("get file", fileName, "bucket", bs.cfg.Bucket)
 	output, err := bs.s3Client.GetObjectWithContext(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String(bs.cfg.BlockStorage.Bucket),
+		Bucket: aws.String(bs.cfg.Bucket),
 		Key:    aws.String(fileName),
 	})
 	if err != nil {
@@ -102,7 +97,7 @@ func (bs *BlockStorage) GetFile(fileName string) ([]byte, error) {
 }
 func (bs *BlockStorage) DeleteFile(fileName string) error {
 	_, err := bs.s3Client.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(bs.cfg.BlockStorage.Bucket),
+		Bucket: aws.String(bs.cfg.Bucket),
 		Key:    aws.String(fileName),
 	})
 	if err != nil {

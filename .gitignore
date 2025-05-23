@@ -13,3 +13,5 @@ _tmp_
 localconfig*
 worker
 vultisigner
+cmd/payroll/server/server
+cmd/dca/server/server

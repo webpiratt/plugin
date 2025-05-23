@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/vultisig/plugin/common"
-	"github.com/vultisig/plugin/config"
 )
 
 const (
@@ -31,10 +30,12 @@ var (
 
 var vaultName string
 var stateDir string
+var ethRpcUrl string
 
 func main() {
 	flag.StringVar(&vaultName, "vault", "", "vault name")
 	flag.StringVar(&stateDir, "state-dir", "", "state directory")
+	flag.StringVar(&ethRpcUrl, "eth-rpc", "http://localhost:8545", "Ethereum RPC URL")
 	flag.Parse()
 
 	if vaultName == "" {
@@ -62,13 +63,8 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("To vault address:", vaultAddress.Hex())
-
-	pluginConfig, err := config.ReadConfig("config-plugin")
-	if err != nil {
-		panic(err)
-	}
-
-	rpcClient, err := ethclient.Dial(pluginConfig.Server.Plugin.Eth.Rpc)
+	//  set the ETH node url
+	rpcClient, err := ethclient.Dial(ethRpcUrl)
 	if err != nil {
 		panic(err)
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/vultisig/plugin/config"
 	pass "github.com/vultisig/plugin/internal/password"
 )
 
@@ -23,17 +22,13 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	cfg, err := config.ReadConfig("config-verifier")
-	if err != nil {
-		panic(fmt.Errorf("failed to read verifier config: %s", err))
-	}
 
 	passwordHash, err := pass.HashPassword(password)
 	if err != nil {
 		panic(fmt.Errorf("failed to hash password: %w", err))
 	}
 
-	pool, err := pgxpool.New(ctx, cfg.Server.Database.DSN)
+	pool, err := pgxpool.New(ctx, "postgres://myuser:mypassword@localhost:5432/vultisig-plugin?sslmode=disable")
 	if err != nil {
 		panic(fmt.Errorf("failed to create connection pool: %w", err))
 	}

@@ -20,20 +20,17 @@ import (
 	vtypes "github.com/vultisig/verifier/types"
 	"github.com/vultisig/verifier/vault"
 
-	"github.com/vultisig/plugin/config"
 	"github.com/vultisig/plugin/internal/scheduler"
 	"github.com/vultisig/plugin/internal/tasks"
 	"github.com/vultisig/plugin/internal/types"
 	vv "github.com/vultisig/plugin/internal/vultisig_validator"
-	"github.com/vultisig/plugin/plugin/dca"
-	"github.com/vultisig/plugin/plugin/payroll"
 	"github.com/vultisig/plugin/service"
 	"github.com/vultisig/plugin/storage"
 	"github.com/vultisig/plugin/storage/postgres"
 )
 
 type Server struct {
-	cfg           *config.Config
+	cfg           ServerConfig
 	db            storage.DatabaseStorage
 	redis         *storage.RedisStorage
 	vaultStorage  vault.Storage
@@ -44,13 +41,12 @@ type Server struct {
 	policyService service.Policy
 	plugin        plugin.Plugin
 	logger        *logrus.Logger
-	vaultFilePath string
 	mode          string
 }
 
 // NewServer returns a new server.
 func NewServer(
-	cfg *config.Config,
+	cfg ServerConfig,
 	db *postgres.PostgresBackend,
 	redis *storage.RedisStorage,
 	vaultStorage vault.Storage,
@@ -58,42 +54,17 @@ func NewServer(
 	client *asynq.Client,
 	inspector *asynq.Inspector,
 	sdClient *statsd.Client,
-	vaultFilePath string,
-	mode string,
-	pluginType string,
-	logger *logrus.Logger,
+	p plugin.Plugin,
 ) *Server {
-	logger.Infof("Server mode: %s, plugin type: %s", mode, pluginType)
-
-	var p plugin.Plugin
-	var schedulerService *scheduler.SchedulerService
-	var err error
-	if mode == "plugin" {
-		switch pluginType {
-		case "payroll":
-			p, err = payroll.NewPayrollPlugin(db, logrus.WithField("service", "plugin").Logger, cfg.Server.BaseConfigPath)
-			if err != nil {
-				logger.Fatal("failed to initialize payroll plugin", err)
-			}
-		case "dca":
-			p, err = dca.NewDCAPlugin(db, logger, cfg.Server.BaseConfigPath)
-			if err != nil {
-				logger.Fatal("fail to initialize DCA plugin: ", err)
-			}
-		default:
-			logger.Fatalf("Invalid plugin type: %s", pluginType)
-		}
-		schedulerService = scheduler.NewSchedulerService(
-			db,
-			logger.WithField("service", "scheduler").Logger,
-			client,
-			redisOpts,
-		)
-		schedulerService.Start()
-		logger.Info("Scheduler service started")
-
-	}
-
+	logger := logrus.WithField("service", "plugin").Logger
+	schedulerService := scheduler.NewSchedulerService(
+		db,
+		logger.WithField("service", "scheduler").Logger,
+		client,
+		redisOpts,
+	)
+	schedulerService.Start()
+	logger.Info("Scheduler service started")
 	policyService, err := service.NewPolicyService(db, schedulerService, logger.WithField("service", "policy").Logger)
 	if err != nil {
 		logger.Fatalf("Failed to initialize policy service: %v", err)
@@ -104,10 +75,8 @@ func NewServer(
 		redis:         redis,
 		client:        client,
 		inspector:     inspector,
-		vaultFilePath: vaultFilePath,
 		sdClient:      sdClient,
 		vaultStorage:  vaultStorage,
-		mode:          mode,
 		plugin:        p,
 		db:            db,
 		scheduler:     schedulerService,
@@ -150,7 +119,7 @@ func (s *Server) StartServer() error {
 	pluginGroup.GET("/policy/schema", s.GetPolicySchema)
 	pluginGroup.DELETE("/policy/:policyId", s.DeletePluginPolicyById)
 
-	return e.Start(fmt.Sprintf(":%d", s.cfg.Server.Port))
+	return e.Start(fmt.Sprintf(":%d", s.cfg.Port))
 }
 
 func (s *Server) Ping(c echo.Context) error {
